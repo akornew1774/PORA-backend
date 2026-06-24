@@ -14,19 +14,19 @@ import (
 
 // OTPHandler - объект, содержащий методы для обработки
 // Api запросов, связанных с OTP-кодами
-type OTPHandler struct {
+type OtpHandler struct {
 	otpService ports.OtpService
 }
 
 // NewOTPHandler создает и возвращает новый объект OTPHandler
-func NewOTPHandler(otpService ports.OtpService) *OTPHandler {
-	return &OTPHandler{
+func NewOtpHandler(otpService ports.OtpService) *OtpHandler {
+	return &OtpHandler{
 		otpService: otpService,
 	}
 }
 
 // SendOTP обрабатывает запрос отправки OTP кода
-func (h *OTPHandler) SendOTP(c *gin.Context) {
+func (h *OtpHandler) SendOTP(c *gin.Context) {
 	var req requests.PhoneNumberRequest
 
 	err := c.ShouldBindJSON(&req)
@@ -47,7 +47,7 @@ func (h *OTPHandler) SendOTP(c *gin.Context) {
 }
 
 // VerifyOTP обрабатывает запрос подтверждения OTP кода
-func (h *OTPHandler) VerifyOTP(c *gin.Context) {
+func (h *OtpHandler) VerifyOTP(c *gin.Context) {
 	var req requests.VerifyOtpRequest
 
 	err := c.ShouldBindJSON(&req)

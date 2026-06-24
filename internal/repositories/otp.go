@@ -21,11 +21,11 @@ func NewOtpRepository(db *gorm.DB) ports.OtpRepository {
 
 // FindByPhone находит Otp по номеру телефона
 func (r *OtpRepo) FindByPhone(phone string) (*entities.Otp, error) {
-	var otp *entities.Otp
+	var otp entities.Otp
 
 	err := r.db.Where("phone = ?", phone).
 		Order("expires_at DESC").
-		First(otp).Error
+		First(&otp).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
@@ -33,7 +33,7 @@ func (r *OtpRepo) FindByPhone(phone string) (*entities.Otp, error) {
 	if err != nil {
 		return nil, err
 	}
-	return otp, nil
+	return &otp, nil
 }
 
 // CreateOTP создает новый объект Otp в БД

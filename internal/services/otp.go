@@ -90,7 +90,14 @@ func (s *OtpService) VerifyOtp(rawPhone string, otp string) (
 
 	otpEntity, err := s.otpRepo.FindByPhone(phone)
 	if err != nil {
+		logger.Log.Error("Ошибка при поиске OTP по номеру: ", err)
 		return responses.VerifyOtpResponse{}, err
+	}
+
+	if otpEntity == nil {
+		logger.Log.Warn("OTP для данного номера не существует")
+		return responses.VerifyOtpResponse{},
+			errors.ErrorOTPIncorrect
 	}
 
 	if otpEntity.Code != otp || otpEntity.IsUsed {
