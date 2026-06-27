@@ -12,3 +12,9 @@ type PhoneNumberRequest struct {
 type UserIDRequest struct {
 	UserID string `json:"user-id" form:"user-id" binding:"required"`
 }
+
+// NameRequest - структура для запросов, содержащих
+// только название/имя нужной структуры в Params или Body
+type NameRequest struct {
+	Name string `json:"name" form:"name" binding:"required"`
+}

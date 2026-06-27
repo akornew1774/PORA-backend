@@ -49,3 +49,74 @@ type RefreshTokenRepository interface {
 	// DeleteByUserID удаляет все refresh-токены c определенным userID
 	DeleteByUserID(userID uuid.UUID) error
 }
+
+// FamilyRepository содержит порты для
+// взаимодействия с семьями в БД
+type FamilyRepository interface {
+	// FindWithMembers находит семью по ID вместе с её участниками
+	FindWithMembers(familyID uuid.UUID) (*entities.Family, error)
+
+	// FindWithLists находит семью по ID вместе с её списками продуктов
+	FindWithLists(familyID uuid.UUID) (*entities.Family, error)
+
+	// FindWithAll находит семью по ID вместе со всеми связанными сущностями
+	FindWithAll(familyID uuid.UUID) (*entities.Family, error)
+
+	// CreateFamily создает новый объект семьи в БД
+	CreateFamily(family *entities.Family) error
+
+	// UpdateFamily создает новый объект семьи в БД
+	UpdateFamily(family *entities.Family) error
+
+	// DeleteFamily создает новый объект семьи в БД
+	DeleteFamily(family *entities.Family) error
+}
+
+// MemberRepository содержит порты для
+// взаимодействия с участниками семей в БД
+type MemberRepository interface {
+	// FindByUserAndFamily находит участника по его ID и ID семьи
+	FindByUserAndFamily(userID uuid.UUID, familyID uuid.UUID) (
+		*entities.FamilyMember, error)
+
+	// CreateMember создает новый объект члена семьи в БД
+	CreateMember(member *entities.FamilyMember) error
+
+	// UpdateMember обновляет объект члена семьи в БД
+	UpdateMember(member *entities.FamilyMember) error
+
+	// DeleteMember удаляет запись об определенном члене семьи
+	DeleteMember(member *entities.FamilyMember) error
+}
+
+// ListRepository содержит порты для
+// взаимодействия со списками продуктов в БД
+type ListRepository interface {
+	// FindByID находит спискок покупок вместе со всеми товарами
+	FindByID(listID uuid.UUID) (*entities.List, error)
+
+	// CreateList создает новый объект списка продуктов в БД
+	CreateList(list *entities.List) error
+
+	// UpdateList обновляет существующий объект списка продуктов в БД
+	UpdateList(list *entities.List) error
+
+	// DeleteList удаляет существующий объект списка продуктов в БД
+	DeleteList(list *entities.List) error
+}
+
+// ItemRepository содержит порты для
+// взаимодействия с товарами в БД
+type ItemRepository interface {
+	// FindByID находит товар из списка продуктов по ID
+	FindByID(itemID uuid.UUID) (*entities.Item, error)
+
+	// CreateItem создает новый объект товара в БД
+	CreateItem(item *entities.Item) error
+
+	// UpdateItem обновляет существующий объект товара в БД
+	UpdateItem(item *entities.Item) error
+
+	// DeleteItem удаляет существующий объект товара в БД
+	DeleteItem(item *entities.Item) error
+}

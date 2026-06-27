@@ -79,7 +79,7 @@ func main() {
 		authorize.POST("/verify-otp", otpHandler.VerifyOTP)
 	}
 
-	user := r.Group("/user")
+	user := api.Group("/user")
 	{
 		user.POST("/update", userHandler.UpdateUserInfo)
 		user.POST("/save-image", userHandler.SaveImage)

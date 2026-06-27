@@ -19,7 +19,7 @@ type RefreshToken struct {
 	ExpiresAt time.Time `gorm:"not null"`
 }
 
-// BeforeCreate создает необходимые отсутствющие поля при создании сущности
+// BeforeCreate создает необходимые отсутствующие поля при создании сущности
 func (r *RefreshToken) BeforeCreate(db *gorm.DB) error {
 	if r.ID == uuid.Nil {
 		r.ID = uuid.New()

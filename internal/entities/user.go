@@ -34,11 +34,14 @@ type User struct {
 
 	RefreshToken *RefreshToken `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 
+	Memberships []FamilyMember `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	Lists       []List         `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+
 	CreatedAt time.Time `gorm:"not null"`
 	UpdatedAt time.Time `gorm:"not null"`
 }
 
-// BeforeCreate создает необходимые отсутствющие поля при создании сущности
+// BeforeCreate создает необходимые отсутствующие поля при создании сущности
 func (u *User) BeforeCreate(db *gorm.DB) error {
 	if u.ID == uuid.Nil {
 		u.ID = uuid.New()

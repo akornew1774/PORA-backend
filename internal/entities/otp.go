@@ -20,7 +20,7 @@ type Otp struct {
 	IsUsed    bool      `gorm:"default:false"`
 }
 
-// BeforeCreate создает необходимые отсутствющие поля при создании сущности
+// BeforeCreate создает необходимые отсутствующие поля при создании сущности
 func (o *Otp) BeforeCreate(db *gorm.DB) error {
 	if o.ID == uuid.Nil {
 		o.ID = uuid.New()
