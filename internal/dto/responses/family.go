@@ -18,7 +18,6 @@ type FamilyInfo struct {
 	Members []FamilyMemberInfo `json:"members"`
 
 	CreatedAt time.Time `json:"created-at"`
-	UpdatedAt time.Time `json:"updated-at"`
 }
 
 // GetFamiliesResponse - структура для ответа на запрос

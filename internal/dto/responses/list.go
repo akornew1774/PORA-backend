@@ -16,4 +16,5 @@ type ListInfo struct {
 	Sections []SectionInfo `json:"sections"`
 
 	CreatedAt time.Time `json:"created-at"`
+	UpdatedAt time.Time `json:"updated-at"`
 }

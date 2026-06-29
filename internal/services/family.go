@@ -63,7 +63,6 @@ func (s *FamilyService) GetFamilies(userID uuid.UUID) (
 			Owner:     owner,
 			Members:   members,
 			CreatedAt: family.CreatedAt,
-			UpdatedAt: family.UpdatedAt,
 		}
 
 		response.Families = append(response.Families, familyInfo)
@@ -147,6 +146,7 @@ func (s *FamilyService) GetLists(familyID uuid.UUID) (
 			Name:      list.Name,
 			Sections:  sections,
 			CreatedAt: list.CreatedAt,
+			UpdatedAt: list.UpdatedAt,
 		}
 
 		lists = append(lists, listInfo)

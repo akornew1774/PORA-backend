@@ -104,7 +104,7 @@ type ListService interface {
 
 	// AddItem добавляет один новый товар в указанный список покупок
 	AddItem(userID uuid.UUID, listID uuid.UUID,
-		req requests.AddItemRequest) (responses.IDResponse, error)
+		req requests.ChangeItemRequest) (responses.IDResponse, error)
 
 	// GetAllSections делит все товары на секции и
 	// переводит их в нужный для response формат

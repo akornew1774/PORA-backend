@@ -142,6 +142,7 @@ func (s *UserService) GetMyInfo(userID uuid.UUID) (
 			Name:      list.Name,
 			Sections:  sections,
 			CreatedAt: list.CreatedAt,
+			UpdatedAt: list.UpdatedAt,
 		}
 
 		response.Lists = append(response.Lists, listInfo)

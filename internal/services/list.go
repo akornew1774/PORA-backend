@@ -9,6 +9,7 @@ import (
 	"pora/internal/infrastructure/logger"
 	"pora/internal/ports"
 	"sort"
+	"time"
 
 	"github.com/google/uuid"
 	"golang.org/x/text/collate"
@@ -119,6 +120,7 @@ func (s *ListService) GetListInfo(listID uuid.UUID) (
 		Name:      list.Name,
 		Sections:  sections,
 		CreatedAt: list.CreatedAt,
+		UpdatedAt: list.UpdatedAt,
 	}
 
 	return response, nil
@@ -126,7 +128,7 @@ func (s *ListService) GetListInfo(listID uuid.UUID) (
 
 // AddItem добавляет один новый товар в указанный список покупок
 func (s *ListService) AddItem(userID uuid.UUID, listID uuid.UUID,
-	req requests.AddItemRequest) (responses.IDResponse, error) {
+	req requests.ChangeItemRequest) (responses.IDResponse, error) {
 
 	var response responses.IDResponse
 
@@ -154,6 +156,25 @@ func (s *ListService) AddItem(userID uuid.UUID, listID uuid.UUID,
 	err := s.itemRepo.CreateItem(item)
 	if err != nil {
 		logger.Log.Error("Ошибка при создании товара в БД: ", err)
+		return response, err
+	}
+
+	list, err := s.listRepo.FindByID(listID)
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске списка по ID: ", err)
+		return response, err
+	}
+
+	if list == nil {
+		logger.Log.Warn("Указанный список не найден")
+		return response, errors.ErrorListNotFound
+	}
+
+	list.UpdatedAt = time.Now().UTC()
+
+	err = s.listRepo.UpdateList(list)
+	if err != nil {
+		logger.Log.Error("Ошибка при обновлении списка: ", err)
 		return response, err
 	}
 
