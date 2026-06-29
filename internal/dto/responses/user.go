@@ -20,8 +20,8 @@ type UserInfo struct {
 // полную информаци. об одном члене семьи
 type FamilyMemberInfo struct {
 	UserInfo
-	JoinedAt time.Time `json:"joined-at"`
-	Color    string    `json:"color"`
+	JoinedAt time.Time `json:"joined-at,omitempty"`
+	Color    string    `json:"color,omitempty"`
 }
 
 // GetMyInfoResponse - структура для ответа на

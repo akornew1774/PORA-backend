@@ -17,6 +17,8 @@ type List struct {
 	UserID   uuid.UUID `gorm:"type:uuid"`
 	FamilyID uuid.UUID `gorm:"type:uuid"`
 
+	Name string `gorm:"not null"`
+
 	Items []Item `gorm:"foreignKey:ListID;constraint:OnDelete:CASCADE"`
 
 	CreatedAt time.Time `gorm:"not null"`

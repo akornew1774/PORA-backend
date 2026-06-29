@@ -54,13 +54,17 @@ func main() {
 	userRepo := repositories.NewUserRepository(db)
 	otpRepo := repositories.NewOtpRepository(db)
 	refreshTokenRepo := repositories.NewRefreshTokenRepository(db)
+	memberRepo := repositories.NewMemberRepository(db)
+	listRepo := repositories.NewListRepository(db)
+	itemRepo := repositories.NewItemRepository(db)
 
 	// Подключение сервисов
 	tokenService := services.NewTokenService(userRepo, refreshTokenRepo)
 	fileService := services.NewFileService(storage)
 	authService := services.NewAuthService(userRepo, refreshTokenRepo, tokenService)
 	otpService := services.NewOTPService(otpRepo, userRepo, tokenService)
-	userService := services.NewUserService(userRepo, fileService)
+	listService := services.NewListService(memberRepo, listRepo, itemRepo)
+	userService := services.NewUserService(userRepo, fileService, listService)
 
 	// Подключение хэндлеров
 	authHandler := handlers.NewAuthHandler(authService, tokenService)

@@ -67,3 +67,28 @@ type FileService interface {
 	SaveProfileImage(file io.Reader,
 		fileName string, userID uuid.UUID) (string, error)
 }
+
+// FamilyService содержит порты для методов для
+// создания семей и просмотра информации о них
+type FamilyService interface {
+}
+
+// ListService содержит порты для методов для
+// просмотра и изменения списков покупок
+type ListService interface {
+	// GetAllSections делит все товары на секции и
+	// переводит их в нужный для response формат
+	GetAllSections(list *entities.List) (
+		[]responses.SectionInfo, error)
+
+	// GetHighestPrioritySections отбирает товары высшего приоритета, делит
+	// их на секции и приводит к нужному для response формату
+	GetHighestPrioritySections(list *entities.List) (
+		[]responses.SectionInfo, error)
+}
+
+// ItemService содержит порты для методов для
+// изменения и удаления продуктов, а также прочих
+// взаимодействий с данной сущностью
+type ItemService interface {
+}

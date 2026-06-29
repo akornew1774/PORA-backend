@@ -8,6 +8,14 @@ import (
 	"gorm.io/gorm"
 )
 
+// HighestItemPriority задает максимальный
+// возможный приоритет товара
+const HighestItemPriority = 3
+
+// OthersSectionName задает название секции, куда
+// помещаются продукты без явно указанной секции
+const OthersSectionName = "Прочее"
+
 // Item - структура сущности продукта из списка покупок.
 // Содержит ссылку на список, название продукта, приоритет,
 // кем был добавлен, количество, время создания и изменения.
@@ -26,6 +34,8 @@ type Item struct {
 
 	Checked         bool `gorm:"default:false"`
 	RemindEveryDays *int
+
+	AddedByID *uuid.UUID `gorm:"type:uuid;not null"`
 
 	CreatedAt time.Time `gorm:"not null"`
 	UpdatedAt time.Time `gorm:"not null"`

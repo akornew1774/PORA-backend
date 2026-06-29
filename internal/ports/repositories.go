@@ -12,6 +12,12 @@ type UserRepository interface {
 	// FindByID находит пользователя по его ID
 	FindByID(userID uuid.UUID) (*entities.User, error)
 
+	// FindWithLists находит пользователя на ID вместе с его списками продуктов
+	FindWithLists(userID uuid.UUID) (*entities.User, error)
+
+	// FindWithFamilies находит пользователя на ID вместе с его семьями
+	FindWithFamilies(userID uuid.UUID) (*entities.User, error)
+
 	// FindByPhone находит пользователя по номеру телефона
 	FindByPhone(phone string) (*entities.User, error)
 

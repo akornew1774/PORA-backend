@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"pora/internal/dto/requests"
+	"pora/internal/dto/responses"
 	"pora/internal/entities"
 	"pora/internal/errors"
 	"pora/internal/infrastructure/logger"
@@ -18,14 +19,17 @@ import (
 type UserService struct {
 	userRepo    ports.UserRepository
 	fileService ports.FileService
+	listService ports.ListService
 }
 
 // NewUserService создает и возвращает новый объект UserService
 func NewUserService(userRepo ports.UserRepository,
-	fileService ports.FileService) ports.UserService {
+	fileService ports.FileService,
+	listService ports.ListService) ports.UserService {
 	return &UserService{
 		userRepo:    userRepo,
 		fileService: fileService,
+		listService: listService,
 	}
 }
 
@@ -97,4 +101,51 @@ func (s *UserService) SaveImage(userID uuid.UUID,
 	baseURL := os.Getenv("BASE_URL")
 
 	return baseURL + url, nil
+}
+
+// GetMyInfo получает информацию о текущем пользователе
+func (s *UserService) GetMyInfo(userID uuid.UUID) (
+	responses.GetMyInfoResponse, error) {
+
+	var response responses.GetMyInfoResponse
+
+	user, err := s.userRepo.FindWithLists(userID)
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске пользователя: ", err)
+		return response, err
+	}
+
+	if user == nil {
+		logger.Log.Warn("Пользователь не был найден")
+		return response, errors.ErrorUserNotFound
+	}
+
+	response.UserInfo = responses.UserInfo{
+		ID:       userID,
+		Name:     user.Name,
+		Surname:  user.Surname,
+		ImageURL: user.ImageURL,
+	}
+
+	for _, list := range user.Lists {
+
+		sections, err := s.listService.
+			GetHighestPrioritySections(&list)
+
+		if err != nil {
+			logger.Log.Warn("Ошибка при получении секций: ", err)
+			continue
+		}
+
+		listInfo := responses.ListInfo{
+			ID:        list.ID,
+			Name:      list.Name,
+			Sections:  sections,
+			CreatedAt: list.CreatedAt,
+		}
+
+		response.Lists = append(response.Lists, listInfo)
+	}
+
+	return response, nil
 }
