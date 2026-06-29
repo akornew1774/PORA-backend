@@ -2,8 +2,10 @@
 package services
 
 import (
+	"pora/internal/dto/requests"
 	"pora/internal/dto/responses"
 	"pora/internal/entities"
+	"pora/internal/errors"
 	"pora/internal/infrastructure/logger"
 	"pora/internal/ports"
 	"sort"
@@ -16,20 +18,147 @@ import (
 // ListService - объект, содержащий методы
 // для работы со списками продуктов
 type ListService struct {
+	userRepo   ports.UserRepository
 	memberRepo ports.MemberRepository
+	familyRepo ports.FamilyRepository
 	listRepo   ports.ListRepository
 	itemRepo   ports.ItemRepository
 }
 
 // NewListService создает и возвращает новый объект ListService
-func NewListService(memberRepo ports.MemberRepository,
+func NewListService(userRepo ports.UserRepository,
+	memberRepo ports.MemberRepository,
+	familyRepo ports.FamilyRepository,
 	listRepo ports.ListRepository,
 	itemRepo ports.ItemRepository) ports.ListService {
 	return &ListService{
+		userRepo:   userRepo,
 		memberRepo: memberRepo,
+		familyRepo: familyRepo,
 		listRepo:   listRepo,
 		itemRepo:   itemRepo,
 	}
+}
+
+// CreateList создает новый список продуктов
+// для пользователя/семьи и возвращает его ID
+func (s *ListService) CreateList(userID uuid.UUID,
+	familyID *uuid.UUID, name string) (responses.IDResponse, error) {
+
+	var response responses.IDResponse
+
+	listID := uuid.New()
+
+	newList := &entities.List{
+		ID:   listID,
+		Name: name,
+	}
+
+	if familyID == nil || *familyID == uuid.Nil {
+
+		user, err := s.userRepo.FindByID(userID)
+		if err != nil {
+			logger.Log.Error("Ошибка при поиске пользователя: ", err)
+			return response, err
+		}
+
+		if user == nil {
+			logger.Log.Warn("Указанный пользователь не найден")
+			return response, errors.ErrorUserNotFound
+		}
+
+		newList.UserID = userID
+
+	} else {
+
+		family, err := s.familyRepo.FindByID(*familyID)
+		if err != nil {
+			logger.Log.Error("Ошибка при поиске семьи: ", err)
+			return response, err
+		}
+
+		if family == nil {
+			logger.Log.Warn("Указанная семья не найдена")
+			return response, errors.ErrorFamilyNotFound
+		}
+
+		newList.FamilyID = *familyID
+	}
+
+	err := s.listRepo.CreateList(newList)
+	if err != nil {
+		logger.Log.Error("Ошибка при сохранении списка продуктов: ", err)
+		return response, err
+	}
+
+	response.ID = listID
+	return response, nil
+}
+
+// GetListInfo получает полную информацию о конкретном списке продуктов
+func (s *ListService) GetListInfo(listID uuid.UUID) (
+	responses.ListInfo, error) {
+
+	var response responses.ListInfo
+
+	list, err := s.listRepo.FindByID(listID)
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске списка по ID")
+		return response, err
+	}
+
+	if list == nil {
+		logger.Log.Warn("Список с указанным ID не найден")
+		return response, errors.ErrorListNotFound
+	}
+
+	sections, err := s.GetAllSections(list)
+
+	response = responses.ListInfo{
+		ID:        listID,
+		Name:      list.Name,
+		Sections:  sections,
+		CreatedAt: list.CreatedAt,
+	}
+
+	return response, nil
+}
+
+// AddItem добавляет один новый товар в указанный список покупок
+func (s *ListService) AddItem(userID uuid.UUID, listID uuid.UUID,
+	req requests.AddItemRequest) (responses.IDResponse, error) {
+
+	var response responses.IDResponse
+
+	itemID := uuid.New()
+
+	item := &entities.Item{
+		ID:     itemID,
+		ListID: listID,
+
+		Name:    req.Name,
+		Section: req.Section,
+
+		Quantity: req.Quantity,
+		Unit:     req.Unit,
+
+		Priority: req.Priority,
+		Urgent:   req.Urgent,
+
+		Checked:         req.Checked,
+		RemindEveryDays: req.RemindEveryDays,
+
+		AddedByID: &userID,
+	}
+
+	err := s.itemRepo.CreateItem(item)
+	if err != nil {
+		logger.Log.Error("Ошибка при создании товара в БД: ", err)
+		return response, err
+	}
+
+	response.ID = itemID
+	return response, nil
 }
 
 // GetAllSections делит все товары на секции и
@@ -98,7 +227,20 @@ func (s *ListService) GetHighestPrioritySections(
 			continue
 		}
 
-		sections[item.Section] = append(sections[item.Section], itemInfo)
+		if item.Section != "" {
+
+			sections[item.Section] = append(
+				sections[item.Section],
+				itemInfo,
+			)
+
+		} else {
+
+			sections[entities.OthersSectionName] = append(
+				sections[entities.OthersSectionName],
+				itemInfo,
+			)
+		}
 	}
 
 	names := make([]string, 0, len(sections))

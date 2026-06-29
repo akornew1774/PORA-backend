@@ -59,6 +59,9 @@ type RefreshTokenRepository interface {
 // FamilyRepository содержит порты для
 // взаимодействия с семьями в БД
 type FamilyRepository interface {
+	// FindByID находит семью по ID без связанный с ней сущностей
+	FindByID(familyID uuid.UUID) (*entities.Family, error)
+
 	// FindWithMembers находит семью по ID вместе с её участниками
 	FindWithMembers(familyID uuid.UUID) (*entities.Family, error)
 

@@ -12,6 +12,8 @@ import (
 type FamilyInfo struct {
 	ID uuid.UUID `json:"id"`
 
+	Name string `json:"name"`
+
 	Owner   FamilyMemberInfo   `json:"owner"`
 	Members []FamilyMemberInfo `json:"members"`
 

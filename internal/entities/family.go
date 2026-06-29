@@ -21,6 +21,7 @@ type Family struct {
 	Lists   []List         `gorm:"foreignKey:FamilyID;constraint:OnDelete:CASCADE"`
 
 	CreatedAt time.Time `gorm:"not null"`
+	UpdatedAt time.Time `gorm:"not null"`
 }
 
 // BeforeCreate создает необходимые отсутствующие поля при создании сущности
@@ -30,6 +31,9 @@ func (f *Family) BeforeCreate(db *gorm.DB) error {
 	}
 	if f.CreatedAt.IsZero() {
 		f.CreatedAt = time.Now().UTC()
+	}
+	if f.UpdatedAt.IsZero() {
+		f.UpdatedAt = time.Now().UTC()
 	}
 	return nil
 }

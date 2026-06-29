@@ -55,6 +55,7 @@ func main() {
 	otpRepo := repositories.NewOtpRepository(db)
 	refreshTokenRepo := repositories.NewRefreshTokenRepository(db)
 	memberRepo := repositories.NewMemberRepository(db)
+	familyRepo := repositories.NewFamilyRepository(db)
 	listRepo := repositories.NewListRepository(db)
 	itemRepo := repositories.NewItemRepository(db)
 
@@ -63,7 +64,7 @@ func main() {
 	fileService := services.NewFileService(storage)
 	authService := services.NewAuthService(userRepo, refreshTokenRepo, tokenService)
 	otpService := services.NewOTPService(otpRepo, userRepo, tokenService)
-	listService := services.NewListService(memberRepo, listRepo, itemRepo)
+	listService := services.NewListService(userRepo, memberRepo, familyRepo, listRepo, itemRepo)
 	userService := services.NewUserService(userRepo, fileService, listService)
 
 	// Подключение хэндлеров

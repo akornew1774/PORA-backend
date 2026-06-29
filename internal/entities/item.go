@@ -11,6 +11,7 @@ import (
 // HighestItemPriority задает максимальный
 // возможный приоритет товара
 const HighestItemPriority = 3
+const DefaultItemPriority = 1
 
 // OthersSectionName задает название секции, куда
 // помещаются продукты без явно указанной секции

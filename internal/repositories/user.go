@@ -60,6 +60,8 @@ func (r *UserRepo) FindWithFamilies(userID uuid.UUID) (*entities.User, error) {
 	err := r.db.
 		Preload("Memberships").
 		Preload("Memberships.Family").
+		Preload("Memberships.Family.Members").
+		Preload("Memberships.Family.Members.User").
 		First(&user, userID).
 		Error
 

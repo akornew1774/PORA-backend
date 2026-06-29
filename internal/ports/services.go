@@ -22,6 +22,9 @@ type UserService interface {
 	// хранилище, сохраняет ссылку на него в профиле пользователя в БД
 	SaveImage(userID uuid.UUID,
 		file io.Reader, fileName string) (string, error)
+
+	// GetMyInfo получает информацию о текущем пользователе
+	GetMyInfo(userID uuid.UUID) (responses.GetMyInfoResponse, error)
 }
 
 // OtpService содержит порты для методов отправки и подтверждения OTP
@@ -71,11 +74,38 @@ type FileService interface {
 // FamilyService содержит порты для методов для
 // создания семей и просмотра информации о них
 type FamilyService interface {
+	// GetFamilies получает информацию в всех семьях текущего пользователя
+	GetFamilies(userID uuid.UUID) (responses.GetFamiliesResponse, error)
+
+	// GetLists получает информацию о списках продуктов конкретной семьи
+	GetLists(familyID uuid.UUID) (responses.GetListsResponse, error)
+
+	// CreateFamily создает новую семью и возвращает её ID
+	CreateFamily(userID uuid.UUID, name string) (responses.IDResponse, error)
+
+	// AddMember добавляет к существующей семье еще одного участника
+	AddMember(userID uuid.UUID, familyID uuid.UUID) error
+
+	// GetFamilyLink получает Link-код семьи
+	// вместе с сылкой для вступления в неё
+	GetFamilyLink(familyID uuid.UUID) (responses.GetFamilyLinkResponse, error)
 }
 
 // ListService содержит порты для методов для
 // просмотра и изменения списков покупок
 type ListService interface {
+	// CreateList создает новый список продуктов
+	// для пользователя/семьи и возвращает его ID
+	CreateList(userID uuid.UUID, familyID *uuid.UUID,
+		name string) (responses.IDResponse, error)
+
+	// GetListInfo получает полную информацию о конкретном списке продуктов
+	GetListInfo(listID uuid.UUID) (responses.ListInfo, error)
+
+	// AddItem добавляет один новый товар в указанный список покупок
+	AddItem(userID uuid.UUID, listID uuid.UUID,
+		req requests.AddItemRequest) (responses.IDResponse, error)
+
 	// GetAllSections делит все товары на секции и
 	// переводит их в нужный для response формат
 	GetAllSections(list *entities.List) (

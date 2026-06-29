@@ -20,6 +20,21 @@ func NewFamilyRepository(db *gorm.DB) ports.FamilyRepository {
 	return &FamilyRepo{db: db}
 }
 
+// FindByID находит семью по ID без связанный с ней сущностей
+func (r *FamilyRepo) FindByID(familyID uuid.UUID) (*entities.Family, error) {
+	var family entities.Family
+
+	err := r.db.First(&family, familyID).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &family, nil
+}
+
 // FindWithMembers находит семью по ID вместе с её участниками
 func (r *FamilyRepo) FindWithMembers(familyID uuid.UUID) (*entities.Family, error) {
 	var family entities.Family
@@ -65,7 +80,7 @@ func (r *FamilyRepo) FindWithAll(familyID uuid.UUID) (*entities.Family, error) {
 		Preload("Members").
 		Preload("Members.User").
 		Preload("Lists").
-		First(&family, "id = ?", familyID).
+		First(&family, familyID).
 		Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
