@@ -29,19 +29,19 @@ type UserService interface {
 
 // OtpService содержит порты для методов отправки и подтверждения OTP
 type OtpService interface {
-	// SendOtp отправляет Otp-код по номеру телефона и сохраняет его
-	SendOtp(rawPhone string) error
+	// SendOtp отправляет Otp-код по номеру телефона / почте и сохраняет его
+	SendOtp(rawPhone string, email string) error
 
 	// VerifyOtp сравнивает полученный Otp-код c сохраненным в БД
-	VerifyOtp(rawPhone string, otp string) (
+	VerifyOtp(rawPhone string, email string, otp string) (
 		responses.VerifyOtpResponse, error)
 }
 
 // AuthService содержит порты для методов, необходимых для авторизации
 type AuthService interface {
-	// CheckUser находит пользователя по телефону и проверяет его
+	// CheckUser находит пользователя по телефону / email и проверяет его
 	// статус (notFound / notRegistered / registered)
-	CheckUser(rawPhone string) (responses.IsUserResponse, error)
+	CheckUser(rawPhone string, email string) (responses.IsUserResponse, error)
 
 	// GetNewTokens получает новые access и refresh токены для пользователя
 	GetNewTokens(refreshTokenStr string) (responses.RefreshResponse, error)
@@ -121,4 +121,17 @@ type ListService interface {
 // изменения и удаления продуктов, а также прочих
 // взаимодействий с данной сущностью
 type ItemService interface {
+	// ChangeItem изменяет поля определенного товара
+	ChangeItem(itemID uuid.UUID, req requests.ChangeItemRequest) error
+
+	// DeleteItem удаляет один товар из списка продуктов
+	DeleteItem(itemID uuid.UUID) error
+
+	// MarkAsBought ставит значение true в поле Checked у товара
+	MarkAsBought(itemID uuid.UUID) error
+
+	// NotifyMembers уведомляет указанных членов семьи об
+	// определенном продукте. К уведомлению можно прикрепить сообщение
+	NotifyMembers(userID uuid.UUID, itemID uuid.UUID,
+		req requests.NotifyMembersRequest) error
 }

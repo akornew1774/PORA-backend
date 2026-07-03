@@ -21,6 +21,9 @@ type UserRepository interface {
 	// FindByPhone находит пользователя по номеру телефона
 	FindByPhone(phone string) (*entities.User, error)
 
+	// FindByEmail находит пользователя по электронной почте
+	FindByEmail(email string) (*entities.User, error)
+
 	// CreateUser создает новый объект пользователя в БД
 	CreateUser(user *entities.User) error
 
@@ -32,6 +35,9 @@ type UserRepository interface {
 type OtpRepository interface {
 	// FindByPhone находит Otp по номеру телефона
 	FindByPhone(phone string) (*entities.Otp, error)
+
+	// FindByEmail находит Otp по электронной почте
+	FindByEmail(email string) (*entities.Otp, error)
 
 	// CreateOTP создает новый объект Otp в БД
 	CreateOtp(otp *entities.Otp) error

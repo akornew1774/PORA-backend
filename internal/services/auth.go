@@ -30,24 +30,42 @@ func NewAuthService(userRepo ports.UserRepository,
 	}
 }
 
-// CheckUser находит пользователя по телефону и проверяет его
+// CheckUser находит пользователя по телефону / email и проверяет его
 // статус (notFound / notRegistered / registered)
-func (s *AuthService) CheckUser(rawPhone string) (
+func (s *AuthService) CheckUser(rawPhone string, email string) (
 	responses.IsUserResponse, error) {
 
-	num, err := phonenumbers.Parse(rawPhone, "RU")
-	if err != nil || !phonenumbers.IsValidNumber(num) {
-		return responses.IsUserResponse{},
-			errors.ErrorInvalidPhone
-	}
+	var user *entities.User
+	var err error
 
-	phone := phonenumbers.Format(num, phonenumbers.E164)
+	if rawPhone == "" && email == "" {
+		logger.Log.Warn("В запросе ни указан ни телефон, ни email")
+		return responses.IsUserResponse{}, errors.ErrorInvalidInput
+	}
 
 	status := string(entities.UserStatusNotFound)
 
-	user, err := s.userRepo.FindByPhone(phone)
-	if err != nil {
-		return responses.IsUserResponse{}, err
+	if rawPhone != "" {
+
+		num, err := phonenumbers.Parse(rawPhone, "RU")
+		if err != nil || !phonenumbers.IsValidNumber(num) {
+			return responses.IsUserResponse{},
+				errors.ErrorInvalidPhone
+		}
+
+		phone := phonenumbers.Format(num, phonenumbers.E164)
+
+		user, err = s.userRepo.FindByPhone(phone)
+		if err != nil {
+			return responses.IsUserResponse{}, err
+		}
+	}
+
+	if email != "" && user == nil {
+		user, err = s.userRepo.FindByEmail(email)
+		if err != nil {
+			return responses.IsUserResponse{}, err
+		}
 	}
 
 	if user == nil {

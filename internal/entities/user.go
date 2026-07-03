@@ -24,7 +24,8 @@ const (
 // его статус, ссылку на refresh токен
 type User struct {
 	ID    uuid.UUID `gorm:"type:uuid;primaryKey"`
-	Phone string    `gorm:"unique;not null"`
+	Phone string    `gorm:"unique"`
+	Email string    `gorm:"unique"`
 
 	Name    string
 	Surname string

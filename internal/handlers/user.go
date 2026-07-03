@@ -28,7 +28,7 @@ func NewUserHandler(userService ports.UserService,
 	}
 }
 
-// UpdateUser обрабатывает запрос на обноление
+// UpdateUser обрабатывает запрос на обновление
 // данных какого-то конкретного пользователя
 func (h *UserHandler) UpdateUserInfo(c *gin.Context) {
 	var req requests.UpdateUserRequest
@@ -94,4 +94,27 @@ func (h *UserHandler) SaveImage(c *gin.Context) {
 
 	logger.Log.Info("Сохранение изображения для профиля успешно выполнено")
 	c.JSON(http.StatusOK, responses.SaveImageResponse{ImageURL: url})
+}
+
+// GetMyInfo обрабатывает запрос на получение
+// информации о текущем пользователе
+func (h *UserHandler) GetMyInfo(c *gin.Context) {
+
+	accessToken := c.GetHeader("Authorization")
+
+	userID, err := h.tokenService.DecodeAccessToken(accessToken)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	response, err := h.userService.GetMyInfo(userID)
+
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	logger.Log.Info("Получение информации о текущем пользователе успешно выполнено")
+	c.JSON(http.StatusOK, response)
 }

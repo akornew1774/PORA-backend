@@ -92,6 +92,24 @@ func (r *UserRepo) FindByPhone(phone string) (*entities.User, error) {
 	return &user, nil
 }
 
+// FindByEmail находит пользователя по электронной почте
+func (r *UserRepo) FindByEmail(email string) (*entities.User, error) {
+	var user entities.User
+
+	err := r.db.
+		Where("email = ?", email).
+		First(&user).
+		Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 // CreateUser создает новый объект пользователя в БД
 func (r *UserRepo) CreateUser(user *entities.User) error {
 	return r.db.Create(user).Error

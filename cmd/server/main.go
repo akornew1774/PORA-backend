@@ -86,7 +86,7 @@ func main() {
 
 	user := api.Group("/user")
 	{
-		user.POST("/update", userHandler.UpdateUserInfo)
+		user.PATCH("/update", userHandler.UpdateUserInfo)
 		user.POST("/save-image", userHandler.SaveImage)
 	}
 

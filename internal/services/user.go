@@ -48,6 +48,13 @@ func (s *UserService) UpdateUserInfo(
 		return errors.ErrorUserNotFound
 	}
 
+	if req.Phone != nil {
+		user.Phone = *req.Phone
+	}
+	if req.Email != nil {
+		user.Email = *req.Email
+	}
+
 	if req.Name != nil {
 		user.Name = *req.Name
 	}

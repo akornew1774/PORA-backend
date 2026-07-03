@@ -36,6 +36,23 @@ func (r *OtpRepo) FindByPhone(phone string) (*entities.Otp, error) {
 	return &otp, nil
 }
 
+// FindByEmail находит Otp по электронной почте
+func (r *OtpRepo) FindByEmail(email string) (*entities.Otp, error) {
+	var otp entities.Otp
+
+	err := r.db.Where("email = ?", email).
+		Order("expires_at DESC").
+		First(&otp).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &otp, nil
+}
+
 // CreateOTP создает новый объект Otp в БД
 func (r *OtpRepo) CreateOtp(otp *entities.Otp) error {
 	return r.db.Create(otp).Error

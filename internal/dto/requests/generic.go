@@ -1,10 +1,11 @@
 // requests - пакет, содержащий структуры запросов по Api
 package requests
 
-// PhoneNumberRequests - структура для запроса,
-// содержащего только номер телефона в Params или Body
-type PhoneNumberRequest struct {
-	Phone string `json:"phone" form:"phone" binding:"required"`
+// PhoneAndEmailRequest - структура для запроса,
+// содержащего только номер телефона и Email в Params или Body
+type PhoneAndEmailRequest struct {
+	Phone string `json:"phone" form:"phone"`
+	Email string `json:"email" form:"email"`
 }
 
 // UserIDRequest - структура для запросов, содержащих

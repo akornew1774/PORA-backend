@@ -14,7 +14,8 @@ type Otp struct {
 	ID uuid.UUID `gorm:"type:uuid;primaryKey"`
 
 	Code  string `gorm:"not null"`
-	Phone string `gorm:"not null"`
+	Phone string
+	Email string
 
 	ExpiresAt time.Time `gorm:"not null"`
 	IsUsed    bool      `gorm:"default:false"`

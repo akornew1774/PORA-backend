@@ -173,6 +173,8 @@ func (s *ItemService) MarkAsBought(itemID uuid.UUID) error {
 	return nil
 }
 
+// NotifyMembers уведомляет указанных членов семьи об
+// определенном продукте. К уведомлению можно прикрепить сообщение
 func (s *ItemService) NotifyMembers(userID uuid.UUID,
 	itemID uuid.UUID, req requests.NotifyMembersRequest) error {
 
@@ -193,6 +195,10 @@ func (s *ItemService) NotifyMembers(userID uuid.UUID,
 
 		if user == nil {
 			logger.Log.Error("Член семьи не найден")
+			continue
+		}
+
+		if user.ID == userID {
 			continue
 		}
 

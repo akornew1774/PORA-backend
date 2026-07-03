@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/phonenumbers"
+	"gopkg.in/mail.v2"
 )
 
 // OTPService - объект, содержащий методы для отправки и подтверждения Otp
@@ -41,22 +42,43 @@ func NewOTPService(
 }
 
 // SendOtp отправляет Otp-код по номеру телефона и сохраняет его
-func (s *OtpService) SendOtp(rawPhone string) error {
+func (s *OtpService) SendOtp(rawPhone string, email string) error {
 
-	num, err := phonenumbers.Parse(rawPhone, "RU")
-	if err != nil || !phonenumbers.IsValidNumber(num) {
-		logger.Log.Warn("Некорректный номер телефона: ", rawPhone)
-		return errors.ErrorInvalidPhone
+	var phone string
+	var err error
+
+	if rawPhone == "" && email == "" {
+		logger.Log.Warn("В запросе ни указан ни телефон, ни email")
+		return errors.ErrorInvalidInput
 	}
 
-	phone := phonenumbers.Format(num, phonenumbers.E164)
+	if rawPhone != "" && email != "" {
+		logger.Log.Warn("В запросе указан и телефон, и email")
+		return errors.ErrorInvalidInput
+	}
+
 	code, err := s.generateOtp()
 	if err != nil {
 		logger.Log.Error("Ошибка при создании Otp-кода: ", err)
 		return err
 	}
 
-	err = s.sendCodeToNumber(phone, code)
+	if rawPhone != "" {
+
+		num, err := phonenumbers.Parse(rawPhone, "RU")
+		if err != nil || !phonenumbers.IsValidNumber(num) {
+			logger.Log.Warn("Некорректный номер телефона: ", rawPhone)
+			return errors.ErrorInvalidPhone
+		}
+
+		phone = phonenumbers.Format(num, phonenumbers.E164)
+
+		err = s.sendCodeToNumber(phone, code)
+
+	} else {
+		err = s.sendCodeToEmail(email, code)
+	}
+
 	if err != nil {
 		logger.Log.Error("Ошибка при отправке OTP-кода")
 		return errors.ErrorInternal
@@ -65,6 +87,7 @@ func (s *OtpService) SendOtp(rawPhone string) error {
 	newOtp := &entities.Otp{
 		Code:  code,
 		Phone: phone,
+		Email: email,
 	}
 
 	err = s.otpRepo.CreateOtp(newOtp)
@@ -77,25 +100,48 @@ func (s *OtpService) SendOtp(rawPhone string) error {
 }
 
 // VerifyOtp сравнивает полученный Otp-код c сохраненным в БД
-func (s *OtpService) VerifyOtp(rawPhone string, otp string) (
-	responses.VerifyOtpResponse, error) {
+func (s *OtpService) VerifyOtp(rawPhone string, email string,
+	otp string) (responses.VerifyOtpResponse, error) {
 
-	num, err := phonenumbers.Parse(rawPhone, "RU")
-	if err != nil || !phonenumbers.IsValidNumber(num) {
-		return responses.VerifyOtpResponse{},
-			errors.ErrorInvalidPhone
+	var (
+		otpEntity *entities.Otp
+		err       error
+		phone     string
+	)
+
+	if rawPhone == "" && email == "" {
+		logger.Log.Warn("В запросе ни указан ни телефон, ни email")
+		return responses.VerifyOtpResponse{}, errors.ErrorInvalidInput
 	}
 
-	phone := phonenumbers.Format(num, phonenumbers.E164)
+	if rawPhone != "" && email != "" {
+		logger.Log.Warn("В запросе указан и телефон, и email")
+		return responses.VerifyOtpResponse{}, errors.ErrorInvalidInput
+	}
 
-	otpEntity, err := s.otpRepo.FindByPhone(phone)
+	if rawPhone != "" {
+
+		num, err := phonenumbers.Parse(rawPhone, "RU")
+		if err != nil || !phonenumbers.IsValidNumber(num) {
+			return responses.VerifyOtpResponse{},
+				errors.ErrorInvalidPhone
+		}
+
+		phone = phonenumbers.Format(num, phonenumbers.E164)
+
+		otpEntity, err = s.otpRepo.FindByPhone(phone)
+
+	} else {
+		otpEntity, err = s.otpRepo.FindByEmail(email)
+	}
+
 	if err != nil {
 		logger.Log.Error("Ошибка при поиске OTP по номеру: ", err)
 		return responses.VerifyOtpResponse{}, err
 	}
 
 	if otpEntity == nil {
-		logger.Log.Warn("OTP для данного номера не существует")
+		logger.Log.Warn("OTP для данного номера/почты не существует")
 		return responses.VerifyOtpResponse{},
 			errors.ErrorOTPIncorrect
 	}
@@ -118,9 +164,16 @@ func (s *OtpService) VerifyOtp(rawPhone string, otp string) (
 		return responses.VerifyOtpResponse{}, err
 	}
 
-	user, err := s.userRepo.FindByPhone(phone)
+	var user *entities.User
+
+	if phone != "" {
+		user, err = s.userRepo.FindByPhone(phone)
+	} else {
+		user, err = s.userRepo.FindByEmail(email)
+	}
+
 	if err != nil {
-		logger.Log.Error("Ошибка при поиске пользователя по номеру: ", err)
+		logger.Log.Error("Ошибка при поиске пользователя: ", err)
 		return responses.VerifyOtpResponse{}, err
 	}
 
@@ -128,6 +181,7 @@ func (s *OtpService) VerifyOtp(rawPhone string, otp string) (
 	if user == nil {
 		user = &entities.User{
 			Phone: phone,
+			Email: email,
 		}
 
 		err := s.userRepo.CreateUser(user)
@@ -214,6 +268,57 @@ func (s *OtpService) sendCodeToNumber(phone string, code string) error {
 	if result.Status != "success" {
 		logger.Log.Error("Не удалость отправить OTP-код, Status: ", result.Status)
 		return errors.ErrorInternal
+	}
+
+	return nil
+}
+
+// sendCodeToEmail отправляет запрос на отправку OTP на электронную почту
+func (s *OtpService) sendCodeToEmail(email string, code string) error {
+
+	message := mail.NewMessage()
+
+	host := os.Getenv("SMTP_HOST")
+	port := 587
+
+	username := os.Getenv("SMTP_USERNAME")
+	password := os.Getenv("SMTP_PASSWORD")
+
+	fromName := os.Getenv("SMTP_FROM_NAME")
+	fromEmail := os.Getenv("SMTP_FROM_EMAIL")
+
+	message.SetHeader(
+		"From",
+		fmt.Sprintf("%s <%s>", fromName, fromEmail),
+	)
+
+	message.SetHeader("To", email)
+
+	message.SetHeader(
+		"Subject",
+		"Код подтверждения",
+	)
+
+	message.SetBody("text/html", fmt.Sprintf(`
+
+		<p>Ваш код подтверждения:</p>
+
+		<h1 style="font-size:32px">%s</h1>
+
+		<p>Никому не сообщайте этот код</p>
+	`, code))
+
+	dialer := mail.NewDialer(
+		host,
+		port,
+		username,
+		password,
+	)
+
+	err := dialer.DialAndSend(message)
+	if err != nil {
+		logger.Log.Error("Ошибка при отправке сообщения по email: ", err)
+		return err
 	}
 
 	return nil

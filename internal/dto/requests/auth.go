@@ -3,7 +3,8 @@ package requests
 
 // VerifyOTPRequest - структура для запроса на подтверждение OTP кода
 type VerifyOtpRequest struct {
-	Phone string `json:"phone" binding:"required"`
+	Phone string `json:"phone"`
+	Email string `json:"email"`
 	OTP   string `json:"otp" binding:"required"`
 }
 
