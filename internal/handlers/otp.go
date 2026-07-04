@@ -27,6 +27,7 @@ func NewOtpHandler(otpService ports.OtpService) *OtpHandler {
 
 // SendOTP обрабатывает запрос отправки OTP кода
 func (h *OtpHandler) SendOTP(c *gin.Context) {
+
 	var req requests.PhoneAndEmailRequest
 
 	err := c.ShouldBindJSON(&req)
@@ -48,6 +49,7 @@ func (h *OtpHandler) SendOTP(c *gin.Context) {
 
 // VerifyOTP обрабатывает запрос подтверждения OTP кода
 func (h *OtpHandler) VerifyOTP(c *gin.Context) {
+
 	var req requests.VerifyOtpRequest
 
 	err := c.ShouldBindJSON(&req)

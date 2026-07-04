@@ -31,6 +31,7 @@ func NewAuthHandler(authService ports.AuthService,
 // CheckUser обрабатывает запрос проверки статуса пользователя.
 // Статусы: notFound, notRegistered, registered
 func (h *AuthHandler) CheckUser(c *gin.Context) {
+
 	var req requests.PhoneAndEmailRequest
 
 	err := c.ShouldBindQuery(&req)
@@ -52,6 +53,7 @@ func (h *AuthHandler) CheckUser(c *gin.Context) {
 
 // RefreshTokens обрабатывает запрос обновления токенов
 func (h *AuthHandler) RefreshTokens(c *gin.Context) {
+
 	var req requests.RefreshRequest
 
 	err := c.ShouldBindQuery(&req)

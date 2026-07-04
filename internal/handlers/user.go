@@ -31,6 +31,7 @@ func NewUserHandler(userService ports.UserService,
 // UpdateUser обрабатывает запрос на обновление
 // данных какого-то конкретного пользователя
 func (h *UserHandler) UpdateUserInfo(c *gin.Context) {
+
 	var req requests.UpdateUserRequest
 
 	err := c.ShouldBindJSON(&req)
