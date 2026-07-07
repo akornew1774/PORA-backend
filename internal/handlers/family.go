@@ -4,6 +4,7 @@ package handlers
 import (
 	"net/http"
 	"pora/internal/dto/requests"
+	"pora/internal/dto/responses"
 	"pora/internal/errors"
 	"pora/internal/infrastructure/logger"
 	"pora/internal/ports"
@@ -109,9 +110,15 @@ func (h *FamilyHandler) CreateFamily(c *gin.Context) {
 // уникального кода семьи и ссылки для вступления в нее
 func (h *FamilyHandler) GetFamilyLink(c *gin.Context) {
 
-	rawFamilyID := c.Param("family_id")
+	var req requests.FamilyLinkRequest
 
-	familyID, err := uuid.Parse(rawFamilyID)
+	err := c.ShouldBindQuery(&req)
+	if err != nil {
+		c.Error(errors.ErrorInvalidInput)
+		return
+	}
+
+	familyID, err := uuid.Parse(req.FamilyID)
 	if err != nil {
 		c.Error(errors.ErrorInvalidInput)
 		return
@@ -126,4 +133,28 @@ func (h *FamilyHandler) GetFamilyLink(c *gin.Context) {
 
 	logger.Log.Info("Получение ссылки на семью прошло успешно")
 	c.JSON(http.StatusOK, response)
+}
+
+// JoinFamily обрабатывает запрос на присоединение к семье
+func (h *FamilyHandler) JoinFamily(c *gin.Context) {
+
+	familyCode := c.Param("link_code")
+
+	accessToken := c.GetHeader("Authorization")
+
+	userID, err := h.tokenService.DecodeAccessToken(accessToken)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	err = h.familyService.AddMember(userID, familyCode)
+
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	logger.Log.Info("Присоединение пользователя к семье прошло успешно")
+	c.JSON(http.StatusOK, responses.GenericResponse{})
 }

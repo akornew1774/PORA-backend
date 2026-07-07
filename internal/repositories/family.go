@@ -92,6 +92,24 @@ func (r *FamilyRepo) FindWithAll(familyID uuid.UUID) (*entities.Family, error) {
 	return &family, nil
 }
 
+// FindByCode находит семью по уникальному коду для приглашения новых членов
+func (r *FamilyRepo) FindByCode(familyCode string) (*entities.Family, error) {
+	var family entities.Family
+
+	err := r.db.
+		Where("invite_code = ?", familyCode).
+		First(&family).
+		Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &family, nil
+}
+
 // CreateFamily создает новый объект семьи в БД
 func (r *FamilyRepo) CreateFamily(family *entities.Family) error {
 	return r.db.Create(family).Error

@@ -150,7 +150,7 @@ func (s *ListService) AddItem(userID uuid.UUID, listID uuid.UUID,
 		Checked:         req.Checked,
 		RemindEveryDays: req.RemindEveryDays,
 
-		AddedByID: &userID,
+		AddedByID: userID,
 	}
 
 	err := s.itemRepo.CreateItem(item)
@@ -309,12 +309,12 @@ func (s *ListService) convertToItemInfo(item *entities.Item,
 		RemindEveryDays: item.RemindEveryDays,
 	}
 
-	if item.AddedByID == nil || familyID == uuid.Nil {
+	if item.AddedByID == uuid.Nil || familyID == uuid.Nil {
 		return itemInfo, nil
 	}
 
 	member, err := s.memberRepo.
-		FindByUserAndFamily(*item.AddedByID, familyID)
+		FindByUserAndFamily(item.AddedByID, familyID)
 
 	if err != nil {
 		logger.Log.Error("Ошибка при поиске члена семьи: ", err)

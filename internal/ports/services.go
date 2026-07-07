@@ -84,7 +84,7 @@ type FamilyService interface {
 	CreateFamily(userID uuid.UUID, name string) (responses.IDResponse, error)
 
 	// AddMember добавляет к существующей семье еще одного участника
-	AddMember(userID uuid.UUID, familyID uuid.UUID) error
+	AddMember(userID uuid.UUID, familyCode string) error
 
 	// GetFamilyLink получает Link-код семьи
 	// вместе с сылкой для вступления в неё

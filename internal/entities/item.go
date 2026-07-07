@@ -36,7 +36,7 @@ type Item struct {
 	Checked         bool `gorm:"default:false"`
 	RemindEveryDays *int
 
-	AddedByID *uuid.UUID `gorm:"type:uuid;not null"`
+	AddedByID uuid.UUID `gorm:"type:uuid;not null"`
 
 	CreatedAt time.Time `gorm:"not null"`
 	UpdatedAt time.Time `gorm:"not null"`

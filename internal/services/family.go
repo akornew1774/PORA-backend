@@ -2,6 +2,7 @@
 package services
 
 import (
+	goErrors "errors"
 	"pora/internal/dto/responses"
 	"pora/internal/entities"
 	"pora/internal/errors"
@@ -9,6 +10,7 @@ import (
 	"pora/internal/ports"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgconn"
 )
 
 // FamilyService - объект, содержащий методы для работы с семьями
@@ -181,16 +183,45 @@ func (s *FamilyService) CreateFamily(userID uuid.UUID,
 		Name:    name,
 	}
 
-	err = s.familyRepo.CreateFamily(family)
+	var attemptsLeft int = 10
+	var pgErr *pgconn.PgError
 
-	if err != nil {
+	// Если inviteCode не уникален, делается attemptsLeft
+	// попыток сделать новый уникальный код
+	for attemptsLeft > 0 {
+
+		inviteCode, err := family.GenerateInviteCode()
+		if err != nil {
+			return response, err
+		}
+
+		family.InviteCode = inviteCode
+
+		err = s.familyRepo.CreateFamily(family)
+		if err == nil {
+			break
+		}
+
+		if goErrors.As(err, &pgErr) {
+			if pgErr.Code == "23505" {
+				attemptsLeft--
+				continue
+			}
+		}
+
 		logger.Log.Error("Ошибка при создании семьи: ", err)
 		return response, err
+	}
+
+	if attemptsLeft == 0 {
+		logger.Log.Error("Не удалось создать уникальный код семьи")
+		return response, errors.ErrorInternal
 	}
 
 	freeColor, err := family.GetFreeColor()
 	if err != nil {
 		logger.Log.Error("Ошибка при поиске свободного цвета")
+		return response, err
 	}
 
 	newMember := &entities.FamilyMember{
@@ -214,7 +245,7 @@ func (s *FamilyService) CreateFamily(userID uuid.UUID,
 
 // AddMember добавляет к существующей семье еще одного участника
 func (s *FamilyService) AddMember(userID uuid.UUID,
-	familyID uuid.UUID) error {
+	familyCode string) error {
 
 	user, err := s.userRepo.FindByID(userID)
 	if err != nil {
@@ -227,7 +258,7 @@ func (s *FamilyService) AddMember(userID uuid.UUID,
 		return errors.ErrorUserNotFound
 	}
 
-	family, err := s.familyRepo.FindByID(familyID)
+	family, err := s.familyRepo.FindByCode(familyCode)
 	if err != nil {
 		logger.Log.Error("Ошибка при поиске семьи: ", err)
 		return err
@@ -246,7 +277,7 @@ func (s *FamilyService) AddMember(userID uuid.UUID,
 
 	newMember := &entities.FamilyMember{
 		UserID:   userID,
-		FamilyID: familyID,
+		FamilyID: family.ID,
 
 		Role:  entities.MemberRole,
 		Color: freeColor,
@@ -269,7 +300,20 @@ func (s *FamilyService) GetFamilyLink(familyID uuid.UUID) (
 
 	var response responses.GetFamilyLinkResponse
 
-	// TODO: соделать логику Link-кода и ссылки на семью
+	family, err := s.familyRepo.FindByID(familyID)
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске семьи: ", err)
+		return response, err
+	}
+
+	if family == nil {
+		logger.Log.Warn("Указанная семья не найдена")
+		return response, errors.ErrorFamilyNotFound
+	}
+
+	response.LinkCode = family.InviteCode
+
+	// TODO: сделать link_url с Deeplink
 
 	return response, nil
 }

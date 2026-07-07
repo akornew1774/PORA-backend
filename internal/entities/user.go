@@ -35,8 +35,9 @@ type User struct {
 
 	RefreshToken *RefreshToken `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 
-	Memberships []FamilyMember `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-	Lists       []List         `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	CreatedFamilies []Family       `gorm:"foreignKey:OwnerID;constraint:OnDelete:CASCADE"`
+	Memberships     []FamilyMember `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	Lists           []List         `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 
 	CreatedAt time.Time `gorm:"not null"`
 	UpdatedAt time.Time `gorm:"not null"`

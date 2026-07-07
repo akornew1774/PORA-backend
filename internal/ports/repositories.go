@@ -77,6 +77,9 @@ type FamilyRepository interface {
 	// FindWithAll находит семью по ID вместе со всеми связанными сущностями
 	FindWithAll(familyID uuid.UUID) (*entities.Family, error)
 
+	// FindByCode находит семью по уникальному коду для приглашения новых членов
+	FindByCode(familyCode string) (*entities.Family, error)
+
 	// CreateFamily создает новый объект семьи в БД
 	CreateFamily(family *entities.Family) error
 
