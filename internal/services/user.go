@@ -127,11 +127,13 @@ func (s *UserService) GetMyInfo(userID uuid.UUID) (
 		return response, errors.ErrorUserNotFound
 	}
 
+	baseURL := os.Getenv("BASE_URL")
+
 	response.UserInfo = responses.UserInfo{
 		ID:       userID,
 		Name:     user.Name,
 		Surname:  user.Surname,
-		ImageURL: user.ImageURL,
+		ImageURL: baseURL + user.ImageURL,
 	}
 
 	for _, list := range user.Lists {

@@ -59,6 +59,11 @@ var (
 		Message: "У пользователя нет разрешений на выполнение данного действия",
 	}
 
+	ErrorMemberExists = AppError{
+		Code:    CodeConflict,
+		Message: "Пользователь уже является членом этой семьи",
+	}
+
 	ErrorInternal = AppError{
 		Code:    CodeInternalError,
 		Message: "Непредвиденная ошибка сервера. Попробуйте позже",

@@ -178,7 +178,34 @@ func (s *ItemService) MarkAsBought(itemID uuid.UUID) error {
 func (s *ItemService) NotifyMembers(userID uuid.UUID,
 	itemID uuid.UUID, req requests.NotifyMembersRequest) error {
 
-	family, err := s.familyRepo.FindWithMembers(req.FamilyID)
+	item, err := s.itemRepo.FindByID(itemID)
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске товара по ID: ", err)
+		return err
+	}
+
+	if item == nil {
+		logger.Log.Warn("Указанный товар не найден")
+		return errors.ErrorItemNotFound
+	}
+
+	list, err := s.listRepo.FindByID(item.ListID)
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске списка по ID: ", err)
+		return err
+	}
+
+	if list == nil {
+		logger.Log.Warn("Указанный список не найден")
+		return errors.ErrorListNotFound
+	}
+
+	if list.FamilyID == nil || *list.FamilyID == uuid.Nil {
+		logger.Log.Warn("Список не принадлежит ни одной семье")
+		return errors.ErrorForbidden
+	}
+
+	family, err := s.familyRepo.FindWithMembers(*list.FamilyID)
 	if err != nil {
 		logger.Log.Error("Ошибка при поиске семьи: ", err)
 		return err

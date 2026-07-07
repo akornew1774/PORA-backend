@@ -15,7 +15,7 @@ type ChangeItemRequest struct {
 	Unit     string  `json:"unit" binding:"required"`
 
 	Priority int  `json:"priority" binding:"required"`
-	Urgent   bool `json:"urgent" binding:"required"`
+	Urgent   bool `json:"urgent"`
 
 	Checked         bool `json:"checked"`
 	RemindEveryDays *int `json:"remind-every-days"`
@@ -24,7 +24,6 @@ type ChangeItemRequest struct {
 // NotifyMembersRequest - структура для уведомления
 // членов семьи о конкретном продукте из списка
 type NotifyMembersRequest struct {
-	FamilyID uuid.UUID   `json:"family-id" binding:"required"`
-	To       []uuid.UUID `json:"to"`
-	Message  string      `json:"message"`
+	To      []uuid.UUID `json:"to"`
+	Message string      `json:"message"`
 }

@@ -14,8 +14,8 @@ import (
 type List struct {
 	ID uuid.UUID `gorm:"type:uuid;primaryKey"`
 
-	UserID   uuid.UUID `gorm:"type:uuid"`
-	FamilyID uuid.UUID `gorm:"type:uuid"`
+	UserID   *uuid.UUID `gorm:"type:uuid"`
+	FamilyID *uuid.UUID `gorm:"type:uuid"`
 
 	Name string `gorm:"not null"`
 

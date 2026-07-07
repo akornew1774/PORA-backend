@@ -67,6 +67,7 @@ func (h *ListHandler) GetListInfo(c *gin.Context) {
 
 	listID, err := uuid.Parse(rawListID)
 	if err != nil {
+		logger.Log.Warn("Некорректный uuid в запросе: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}
@@ -98,6 +99,7 @@ func (h *ListHandler) AddItem(c *gin.Context) {
 
 	listID, err := uuid.Parse(rawListID)
 	if err != nil {
+		logger.Log.Warn("Некорректный uuid в запросе: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}

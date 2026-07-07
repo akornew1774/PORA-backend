@@ -60,6 +60,7 @@ func (r *FamilyRepo) FindWithLists(familyID uuid.UUID) (*entities.Family, error)
 
 	err := r.db.
 		Preload("Lists").
+		Preload("Lists.Items").
 		First(&family, familyID).
 		Error
 
@@ -80,6 +81,7 @@ func (r *FamilyRepo) FindWithAll(familyID uuid.UUID) (*entities.Family, error) {
 		Preload("Members").
 		Preload("Members.User").
 		Preload("Lists").
+		Preload("Lists.Items").
 		First(&family, familyID).
 		Error
 

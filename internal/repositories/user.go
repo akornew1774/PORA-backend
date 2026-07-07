@@ -41,6 +41,7 @@ func (r *UserRepo) FindWithLists(userID uuid.UUID) (*entities.User, error) {
 
 	err := r.db.
 		Preload("Lists").
+		Preload("Lists.Items").
 		First(&user, userID).
 		Error
 

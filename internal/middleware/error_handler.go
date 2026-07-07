@@ -63,6 +63,14 @@ func ErrorHandler() gin.HandlerFunc {
 				})
 				return
 
+			case errors.CodeConflict:
+
+				c.JSON(http.StatusConflict, gin.H{
+					"code":    appErr.Code,
+					"message": appErr.Message,
+				})
+				return
+
 			default:
 
 				c.JSON(http.StatusInternalServerError, gin.H{

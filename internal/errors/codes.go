@@ -11,5 +11,6 @@ const (
 	CodeRefreshExpired = "REFRESH_TOKEN_EXPIRED"
 	CodeNotFound       = "NOT_FOUND"
 	CodeForbidden      = "FORBIDDEN"
+	CodeConflict       = "CONFLICT"
 	CodeInternalError  = "INTERNAL_ERROR"
 )

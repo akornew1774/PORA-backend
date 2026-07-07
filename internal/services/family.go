@@ -3,6 +3,8 @@ package services
 
 import (
 	goErrors "errors"
+	"fmt"
+	"pora/internal/config"
 	"pora/internal/dto/responses"
 	"pora/internal/entities"
 	"pora/internal/errors"
@@ -15,22 +17,25 @@ import (
 
 // FamilyService - объект, содержащий методы для работы с семьями
 type FamilyService struct {
-	userRepo    ports.UserRepository
-	memberRepo  ports.MemberRepository
-	familyRepo  ports.FamilyRepository
-	listService ports.ListService
+	userRepo       ports.UserRepository
+	memberRepo     ports.MemberRepository
+	familyRepo     ports.FamilyRepository
+	listService    ports.ListService
+	deepLinkConfig config.DeepLinkConfig
 }
 
 // NewFamilyRepository создает и возвращает новый объект FamilyService
 func NewFamilyService(userRepo ports.UserRepository,
 	memberRepo ports.MemberRepository,
 	familyRepo ports.FamilyRepository,
-	listService ports.ListService) ports.FamilyService {
+	listService ports.ListService,
+	deepLinkConfig config.DeepLinkConfig) ports.FamilyService {
 	return &FamilyService{
-		userRepo:    userRepo,
-		memberRepo:  memberRepo,
-		familyRepo:  familyRepo,
-		listService: listService,
+		userRepo:       userRepo,
+		memberRepo:     memberRepo,
+		familyRepo:     familyRepo,
+		listService:    listService,
+		deepLinkConfig: deepLinkConfig,
 	}
 }
 
@@ -269,6 +274,17 @@ func (s *FamilyService) AddMember(userID uuid.UUID,
 		return errors.ErrorFamilyNotFound
 	}
 
+	member, err := s.memberRepo.FindByUserAndFamily(userID, family.ID)
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске члена семьи: ", err)
+		return err
+	}
+
+	if member != nil {
+		logger.Log.Warn("Пользователь уже является членом семьи")
+		return errors.ErrorMemberExists
+	}
+
 	freeColor, err := family.GetFreeColor()
 	if err != nil {
 		logger.Log.Error("Ошибка при поиске свободного члена")
@@ -313,7 +329,13 @@ func (s *FamilyService) GetFamilyLink(familyID uuid.UUID) (
 
 	response.LinkCode = family.InviteCode
 
-	// TODO: сделать link_url с Deeplink
+	linkURL := fmt.Sprintf(
+		"%s/api/families/join/%s",
+		s.deepLinkConfig.Host,
+		family.InviteCode,
+	)
+
+	response.LinkURL = linkURL
 
 	return response, nil
 }

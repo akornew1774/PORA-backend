@@ -3,6 +3,7 @@ package main
 
 import (
 	"os"
+	"pora/internal/config"
 	"pora/internal/handlers"
 	"pora/internal/infrastructure/database"
 	"pora/internal/infrastructure/logger"
@@ -50,6 +51,9 @@ func main() {
 	// Подключение хранилища
 	storage := storage.NewLocalStorage(os.Getenv("BASE_PATH"))
 
+	// Загрузка конфигураций
+	cfg := config.Load()
+
 	// Подключение репозиториев
 	userRepo := repositories.NewUserRepository(db)
 	otpRepo := repositories.NewOtpRepository(db)
@@ -66,7 +70,7 @@ func main() {
 	otpService := services.NewOTPService(otpRepo, userRepo, tokenService)
 	listService := services.NewListService(userRepo, memberRepo, familyRepo, listRepo, itemRepo)
 	userService := services.NewUserService(userRepo, fileService, listService)
-	familyService := services.NewFamilyService(userRepo, memberRepo, familyRepo, listService)
+	familyService := services.NewFamilyService(userRepo, memberRepo, familyRepo, listService, cfg.DeepLink)
 	itemService := services.NewItemService(familyRepo, listRepo, itemRepo)
 
 	// Подключение хэндлеров
@@ -76,6 +80,7 @@ func main() {
 	familyHandler := handlers.NewFamilyHandler(familyService, tokenService)
 	listHandler := handlers.NewListHandler(listService, tokenService)
 	itemHandler := handlers.NewItemHandler(itemService, tokenService)
+	appLinkHandler := handlers.NewAppLinkHandler(cfg.Android, cfg.DeepLink)
 
 	// Регистрация маршрутов
 	api := r.Group("/api")
@@ -121,6 +126,12 @@ func main() {
 		items.PATCH("/:item_id/bought", itemHandler.MarkAsBought)
 		items.POST("/:item_id/notify", itemHandler.NotifyMembers)
 	}
+
+	// Маршруты для реализации внутренних ссылок для приложения
+	r.GET("/.well-known/assetlinks.json", appLinkHandler.AssetLinks)
+
+	// Маршруты для переадресации на скачивание приложения
+	families.GET("/join/:link_code", appLinkHandler.OpenInvite)
 
 	// Маршруты для получения изображений
 	uploads := r.Group("/uploads")

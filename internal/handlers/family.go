@@ -60,6 +60,7 @@ func (h *FamilyHandler) GetLists(c *gin.Context) {
 
 	familyID, err := uuid.Parse(rawFamilyID)
 	if err != nil {
+		logger.Log.Warn("Некорректный uuid в запросе: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}

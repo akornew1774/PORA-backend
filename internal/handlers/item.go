@@ -45,6 +45,7 @@ func (h *ItemHandler) ChangeItem(c *gin.Context) {
 
 	itemID, err := uuid.Parse(rawItemID)
 	if err != nil {
+		logger.Log.Warn("Некорректный uuid в запросе: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}
@@ -68,6 +69,7 @@ func (h *ItemHandler) DeleteItem(c *gin.Context) {
 
 	itemID, err := uuid.Parse(rawItemID)
 	if err != nil {
+		logger.Log.Warn("Некорректный uuid в запросе: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}
@@ -91,6 +93,7 @@ func (h *ItemHandler) MarkAsBought(c *gin.Context) {
 
 	itemID, err := uuid.Parse(rawItemID)
 	if err != nil {
+		logger.Log.Warn("Некорректный uuid в запросе: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}
@@ -130,6 +133,7 @@ func (h *ItemHandler) NotifyMembers(c *gin.Context) {
 
 	itemID, err := uuid.Parse(rawItemID)
 	if err != nil {
+		logger.Log.Warn("Некорректный uuid в запросе: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}

@@ -68,7 +68,7 @@ func (s *ListService) CreateList(userID uuid.UUID,
 			return response, errors.ErrorUserNotFound
 		}
 
-		newList.UserID = userID
+		newList.UserID = &userID
 
 	} else {
 
@@ -83,7 +83,7 @@ func (s *ListService) CreateList(userID uuid.UUID,
 			return response, errors.ErrorFamilyNotFound
 		}
 
-		newList.FamilyID = *familyID
+		newList.FamilyID = familyID
 	}
 
 	err := s.listRepo.CreateList(newList)
@@ -153,12 +153,6 @@ func (s *ListService) AddItem(userID uuid.UUID, listID uuid.UUID,
 		AddedByID: userID,
 	}
 
-	err := s.itemRepo.CreateItem(item)
-	if err != nil {
-		logger.Log.Error("Ошибка при создании товара в БД: ", err)
-		return response, err
-	}
-
 	list, err := s.listRepo.FindByID(listID)
 	if err != nil {
 		logger.Log.Error("Ошибка при поиске списка по ID: ", err)
@@ -168,6 +162,12 @@ func (s *ListService) AddItem(userID uuid.UUID, listID uuid.UUID,
 	if list == nil {
 		logger.Log.Warn("Указанный список не найден")
 		return response, errors.ErrorListNotFound
+	}
+
+	err = s.itemRepo.CreateItem(item)
+	if err != nil {
+		logger.Log.Error("Ошибка при создании товара в БД: ", err)
+		return response, err
 	}
 
 	list.UpdatedAt = time.Now().UTC()
@@ -197,7 +197,20 @@ func (s *ListService) GetAllSections(list *entities.List) (
 			continue
 		}
 
-		sections[item.Section] = append(sections[item.Section], itemInfo)
+		if item.Section != "" {
+
+			sections[item.Section] = append(
+				sections[item.Section],
+				itemInfo,
+			)
+
+		} else {
+
+			sections[entities.OthersSectionName] = append(
+				sections[entities.OthersSectionName],
+				itemInfo,
+			)
+		}
 	}
 
 	names := make([]string, 0, len(sections))
@@ -296,7 +309,7 @@ func (s *ListService) GetHighestPrioritySections(
 // convertToItemInfo переводит сущности Item из типа entities.Item в формат
 // responses.ItemInfo, при этом добавляя информацию о добавившем его пользователе
 func (s *ListService) convertToItemInfo(item *entities.Item,
-	familyID uuid.UUID) (responses.ItemInfo, error) {
+	familyID *uuid.UUID) (responses.ItemInfo, error) {
 
 	itemInfo := responses.ItemInfo{
 		ID:              item.ID,
@@ -309,12 +322,12 @@ func (s *ListService) convertToItemInfo(item *entities.Item,
 		RemindEveryDays: item.RemindEveryDays,
 	}
 
-	if item.AddedByID == uuid.Nil || familyID == uuid.Nil {
+	if item.AddedByID == uuid.Nil || familyID == nil || *familyID == uuid.Nil {
 		return itemInfo, nil
 	}
 
 	member, err := s.memberRepo.
-		FindByUserAndFamily(item.AddedByID, familyID)
+		FindByUserAndFamily(item.AddedByID, *familyID)
 
 	if err != nil {
 		logger.Log.Error("Ошибка при поиске члена семьи: ", err)
