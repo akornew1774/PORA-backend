@@ -4,6 +4,7 @@ package handlers
 import (
 	"net/http"
 	"pora/internal/dto/requests"
+	"pora/internal/dto/responses"
 	"pora/internal/errors"
 	"pora/internal/infrastructure/logger"
 	"pora/internal/ports"
@@ -36,6 +37,7 @@ func (h *ListHandler) CreateList(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
+		logger.Log.Warn("Ошибка при десериализации запроса: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}
@@ -44,6 +46,7 @@ func (h *ListHandler) CreateList(c *gin.Context) {
 
 	userID, err := h.tokenService.DecodeAccessToken(accessToken)
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при декодировании Access-токена")
 		c.Error(err)
 		return
 	}
@@ -51,6 +54,7 @@ func (h *ListHandler) CreateList(c *gin.Context) {
 	response, err := h.listService.CreateList(userID, req.FamilyID, req.Name)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -75,6 +79,7 @@ func (h *ListHandler) GetListInfo(c *gin.Context) {
 	response, err := h.listService.GetListInfo(listID)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -91,6 +96,7 @@ func (h *ListHandler) AddItem(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
+		logger.Log.Warn("Ошибка при десериализации запроса: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}
@@ -108,6 +114,7 @@ func (h *ListHandler) AddItem(c *gin.Context) {
 
 	userID, err := h.tokenService.DecodeAccessToken(accessToken)
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при декодировании Access-токена")
 		c.Error(err)
 		return
 	}
@@ -115,10 +122,35 @@ func (h *ListHandler) AddItem(c *gin.Context) {
 	response, err := h.listService.AddItem(userID, listID, req)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
 
 	logger.Log.Info("Добавление товара в список прошло успешно")
 	c.JSON(http.StatusOK, response)
+}
+
+// DeleteList обрабатывает запрос на удаление списка продуктов
+func (h *ListHandler) DeleteList(c *gin.Context) {
+
+	rawListID := c.Param("list_id")
+
+	listID, err := uuid.Parse(rawListID)
+	if err != nil {
+		logger.Log.Warn("Некорректный uuid в запросе: ", err)
+		c.Error(errors.ErrorInvalidInput)
+		return
+	}
+
+	err = h.listService.DeleteList(listID)
+
+	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
+		c.Error(err)
+		return
+	}
+
+	logger.Log.Info("Удаление списка продуктов прошло успешно")
+	c.JSON(http.StatusOK, responses.GenericResponse{})
 }

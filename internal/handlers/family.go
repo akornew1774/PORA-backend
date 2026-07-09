@@ -37,6 +37,7 @@ func (h *FamilyHandler) GetFamilies(c *gin.Context) {
 
 	userID, err := h.tokenService.DecodeAccessToken(accessToken)
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при декодировании Access-токена")
 		c.Error(err)
 		return
 	}
@@ -44,6 +45,7 @@ func (h *FamilyHandler) GetFamilies(c *gin.Context) {
 	response, err := h.familyService.GetFamilies(userID)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -68,6 +70,7 @@ func (h *FamilyHandler) GetLists(c *gin.Context) {
 	response, err := h.familyService.GetLists(familyID)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -84,6 +87,7 @@ func (h *FamilyHandler) CreateFamily(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
+		logger.Log.Warn("Ошибка при десериализации запроса: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}
@@ -92,6 +96,7 @@ func (h *FamilyHandler) CreateFamily(c *gin.Context) {
 
 	userID, err := h.tokenService.DecodeAccessToken(accessToken)
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при декодировании Access-токена")
 		c.Error(err)
 		return
 	}
@@ -99,6 +104,7 @@ func (h *FamilyHandler) CreateFamily(c *gin.Context) {
 	response, err := h.familyService.CreateFamily(userID, req.Name)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -115,12 +121,14 @@ func (h *FamilyHandler) GetFamilyLink(c *gin.Context) {
 
 	err := c.ShouldBindQuery(&req)
 	if err != nil {
+		logger.Log.Warn("Ошибка при десериализации запроса: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}
 
 	familyID, err := uuid.Parse(req.FamilyID)
 	if err != nil {
+		logger.Log.Warn("Некорректный uuid в запросе: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}
@@ -128,6 +136,7 @@ func (h *FamilyHandler) GetFamilyLink(c *gin.Context) {
 	response, err := h.familyService.GetFamilyLink(familyID)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -145,6 +154,7 @@ func (h *FamilyHandler) JoinFamily(c *gin.Context) {
 
 	userID, err := h.tokenService.DecodeAccessToken(accessToken)
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при декодировании Access-токена")
 		c.Error(err)
 		return
 	}
@@ -152,10 +162,35 @@ func (h *FamilyHandler) JoinFamily(c *gin.Context) {
 	err = h.familyService.AddMember(userID, familyCode)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
 
 	logger.Log.Info("Присоединение пользователя к семье прошло успешно")
+	c.JSON(http.StatusOK, responses.GenericResponse{})
+}
+
+// DeleteFamily обрабатывает запрос на удаление семьи
+func (h *FamilyHandler) DeleteFamily(c *gin.Context) {
+
+	rawFamilyID := c.Param("family_id")
+
+	familyID, err := uuid.Parse(rawFamilyID)
+	if err != nil {
+		logger.Log.Warn("Некорректный uuid в запросе: ", err)
+		c.Error(errors.ErrorInvalidInput)
+		return
+	}
+
+	err = h.familyService.DeleteFamily(familyID)
+
+	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
+		c.Error(err)
+		return
+	}
+
+	logger.Log.Info("Удаление семьи успешно выполнено")
 	c.JSON(http.StatusOK, responses.GenericResponse{})
 }

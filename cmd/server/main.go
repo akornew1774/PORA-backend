@@ -71,7 +71,7 @@ func main() {
 	listService := services.NewListService(userRepo, memberRepo, familyRepo, listRepo, itemRepo)
 	userService := services.NewUserService(userRepo, fileService, listService)
 	familyService := services.NewFamilyService(userRepo, memberRepo, familyRepo, listService, cfg.DeepLink)
-	itemService := services.NewItemService(familyRepo, listRepo, itemRepo)
+	itemService := services.NewItemService(familyRepo, listRepo, itemRepo, listService)
 
 	// Подключение хэндлеров
 	authHandler := handlers.NewAuthHandler(authService, tokenService)
@@ -110,6 +110,7 @@ func main() {
 
 		families.POST("/create-family", familyHandler.CreateFamily)
 		families.POST("/join/:link_code", familyHandler.JoinFamily)
+		families.DELETE("/:family_id", familyHandler.DeleteFamily)
 	}
 
 	lists := api.Group("/lists")
@@ -117,12 +118,15 @@ func main() {
 		lists.GET("/:list_id", listHandler.GetListInfo)
 		lists.POST("/create-list", listHandler.CreateList)
 		lists.POST("/:list_id/items", listHandler.AddItem)
+		lists.DELETE("/:list_id", listHandler.DeleteList)
 	}
 
 	items := api.Group("/items")
 	{
+		items.GET("/:item_id", itemHandler.GetItemInfo)
 		items.PUT("/:item_id", itemHandler.ChangeItem)
 		items.DELETE("/:item_id", itemHandler.DeleteItem)
+
 		items.PATCH("/:item_id/bought", itemHandler.MarkAsBought)
 		items.POST("/:item_id/notify", itemHandler.NotifyMembers)
 	}

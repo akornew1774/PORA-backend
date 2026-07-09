@@ -32,6 +32,7 @@ func (h *OtpHandler) SendOTP(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
+		logger.Log.Warn("Ошибка при десериализации запроса: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}
@@ -39,6 +40,7 @@ func (h *OtpHandler) SendOTP(c *gin.Context) {
 	err = h.otpService.SendOtp(req.Phone, req.Email)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -54,6 +56,7 @@ func (h *OtpHandler) VerifyOTP(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
+		logger.Log.Warn("Ошибка при десериализации запроса: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}
@@ -61,6 +64,7 @@ func (h *OtpHandler) VerifyOTP(c *gin.Context) {
 	response, err := h.otpService.VerifyOtp(req.Phone, req.Email, req.OTP)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}

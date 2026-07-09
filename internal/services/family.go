@@ -310,7 +310,7 @@ func (s *FamilyService) AddMember(userID uuid.UUID,
 }
 
 // GetFamilyLink получает Link-код семьи
-// вместе с сылкой для вступления в неё
+// вместе с ссылкой для вступления в неё
 func (s *FamilyService) GetFamilyLink(familyID uuid.UUID) (
 	responses.GetFamilyLinkResponse, error) {
 
@@ -338,4 +338,26 @@ func (s *FamilyService) GetFamilyLink(familyID uuid.UUID) (
 	response.LinkURL = linkURL
 
 	return response, nil
+}
+
+// DeleteFamily удаляет одну конкретную семью
+func (s *FamilyService) DeleteFamily(familyID uuid.UUID) error {
+
+	family, err := s.familyRepo.FindByID(familyID)
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске семьи: ", err)
+		return err
+	}
+
+	if family == nil {
+		logger.Log.Warn("Указанная семья не найдена")
+		return errors.ErrorFamilyNotFound
+	}
+
+	err = s.familyRepo.DeleteFamily(family)
+	if err != nil {
+		logger.Log.Error("Ошибка при удалении семьи: ", err)
+	}
+
+	return nil
 }

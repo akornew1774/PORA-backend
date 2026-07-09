@@ -89,6 +89,9 @@ type FamilyService interface {
 	// GetFamilyLink получает Link-код семьи
 	// вместе с сылкой для вступления в неё
 	GetFamilyLink(familyID uuid.UUID) (responses.GetFamilyLinkResponse, error)
+
+	// DeleteFamily удаляет одну конкретную семью
+	DeleteFamily(familyID uuid.UUID) error
 }
 
 // ListService содержит порты для методов для
@@ -106,6 +109,9 @@ type ListService interface {
 	AddItem(userID uuid.UUID, listID uuid.UUID,
 		req requests.ChangeItemRequest) (responses.IDResponse, error)
 
+	// DeleteList удаляет один конкретный список продуктов
+	DeleteList(listID uuid.UUID) error
+
 	// GetAllSections делит все товары на секции и
 	// переводит их в нужный для response формат
 	GetAllSections(list *entities.List) (
@@ -115,12 +121,20 @@ type ListService interface {
 	// их на секции и приводит к нужному для response формату
 	GetHighestPrioritySections(list *entities.List) (
 		[]responses.SectionInfo, error)
+
+	// СonvertToItemInfo переводит сущности Item из типа entities.Item в формат
+	// responses.ItemInfo, при этом добавляя информацию о добавившем его пользователе
+	СonvertToItemInfo(item *entities.Item,
+		familyID *uuid.UUID) (responses.ItemInfo, error)
 }
 
 // ItemService содержит порты для методов для
 // изменения и удаления продуктов, а также прочих
 // взаимодействий с данной сущностью
 type ItemService interface {
+	// GetItemInfo получает информацию о конкретном товаре
+	GetItemInfo(itemID uuid.UUID) (responses.ItemInfo, error)
+
 	// ChangeItem изменяет поля определенного товара
 	ChangeItem(itemID uuid.UUID, req requests.ChangeItemRequest) error
 

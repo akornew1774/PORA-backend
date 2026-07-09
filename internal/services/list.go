@@ -182,6 +182,29 @@ func (s *ListService) AddItem(userID uuid.UUID, listID uuid.UUID,
 	return response, nil
 }
 
+// DeleteList удаляет один конкретный список продуктов
+func (s *ListService) DeleteList(listID uuid.UUID) error {
+
+	list, err := s.listRepo.FindByID(listID)
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске списка продуктов: ", err)
+		return err
+	}
+
+	if list == nil {
+		logger.Log.Warn("Указанный список продуктов не найден")
+		return errors.ErrorListNotFound
+	}
+
+	err = s.listRepo.DeleteList(list)
+	if err != nil {
+		logger.Log.Error("Ошибка при удалении списка продуктов: ", err)
+		return err
+	}
+
+	return nil
+}
+
 // GetAllSections делит все товары на секции и
 // переводит их в нужный для response формат
 func (s *ListService) GetAllSections(list *entities.List) (
@@ -191,7 +214,7 @@ func (s *ListService) GetAllSections(list *entities.List) (
 
 	for _, item := range list.Items {
 
-		itemInfo, err := s.convertToItemInfo(&item, list.FamilyID)
+		itemInfo, err := s.СonvertToItemInfo(&item, list.FamilyID)
 		if err != nil {
 			logger.Log.Warn("Ошибка при получении информации о товаре")
 			continue
@@ -255,7 +278,7 @@ func (s *ListService) GetHighestPrioritySections(
 			continue
 		}
 
-		itemInfo, err := s.convertToItemInfo(&item, list.FamilyID)
+		itemInfo, err := s.СonvertToItemInfo(&item, list.FamilyID)
 		if err != nil {
 			logger.Log.Warn("Ошибка при получении информации о товаре")
 			continue
@@ -306,9 +329,9 @@ func (s *ListService) GetHighestPrioritySections(
 	return result, nil
 }
 
-// convertToItemInfo переводит сущности Item из типа entities.Item в формат
+// СonvertToItemInfo переводит сущности Item из типа entities.Item в формат
 // responses.ItemInfo, при этом добавляя информацию о добавившем его пользователе
-func (s *ListService) convertToItemInfo(item *entities.Item,
+func (s *ListService) СonvertToItemInfo(item *entities.Item,
 	familyID *uuid.UUID) (responses.ItemInfo, error) {
 
 	itemInfo := responses.ItemInfo{

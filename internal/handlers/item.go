@@ -29,7 +29,32 @@ func NewItemHandler(itemService ports.ItemService,
 	}
 }
 
-// ChangeItem обрабатывате запрос на изменение
+// GetItemInfo обрабатывает запрос на получение
+// информации об одном конкретном товаре
+func (h *ItemHandler) GetItemInfo(c *gin.Context) {
+
+	rawItemID := c.Param("item_id")
+
+	itemID, err := uuid.Parse(rawItemID)
+	if err != nil {
+		logger.Log.Warn("Некорректный uuid в запросе: ", err)
+		c.Error(errors.ErrorInvalidInput)
+		return
+	}
+
+	response, err := h.itemService.GetItemInfo(itemID)
+
+	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
+		c.Error(err)
+		return
+	}
+
+	logger.Log.Info("Получение информации о товаре успешно выполнено")
+	c.JSON(http.StatusOK, response)
+}
+
+// ChangeItem обрабатывает запрос на изменение
 // определенного товара в списке покупок
 func (h *ItemHandler) ChangeItem(c *gin.Context) {
 
@@ -37,6 +62,7 @@ func (h *ItemHandler) ChangeItem(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
+		logger.Log.Warn("Ошибка при десериализации запроса: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}
@@ -53,6 +79,7 @@ func (h *ItemHandler) ChangeItem(c *gin.Context) {
 	err = h.itemService.ChangeItem(itemID, req)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -77,6 +104,7 @@ func (h *ItemHandler) DeleteItem(c *gin.Context) {
 	err = h.itemService.DeleteItem(itemID)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -101,6 +129,7 @@ func (h *ItemHandler) MarkAsBought(c *gin.Context) {
 	err = h.itemService.MarkAsBought(itemID)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -117,6 +146,7 @@ func (h *ItemHandler) NotifyMembers(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
+		logger.Log.Warn("Ошибка при десериализации запроса: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}
@@ -125,6 +155,7 @@ func (h *ItemHandler) NotifyMembers(c *gin.Context) {
 
 	userID, err := h.tokenService.DecodeAccessToken(accessToken)
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при декодировании Access-токена")
 		c.Error(err)
 		return
 	}
@@ -141,6 +172,7 @@ func (h *ItemHandler) NotifyMembers(c *gin.Context) {
 	err = h.itemService.NotifyMembers(userID, itemID, req)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}

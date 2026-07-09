@@ -15,11 +15,12 @@ type SectionInfo struct {
 // ItemInfo - структура, содержащая информацию
 // о конкретном товаре в списке продуктов
 type ItemInfo struct {
-	ID   uuid.UUID `json:"id"`
-	Name string    `json:"name"`
+	ID      uuid.UUID `json:"id"`
+	Name    string    `json:"name"`
+	Section string    `json:"section,omitempty"`
 
 	Quantity float64 `json:"quantity"`
-	Unit     string  `json:"unit,omitempty"`
+	Unit     string  `json:"unit"`
 
 	Priority int  `json:"priority"`
 	Urgent   bool `json:"urgent"`

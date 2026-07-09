@@ -36,6 +36,7 @@ func (h *UserHandler) UpdateUserInfo(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
+		logger.Log.Warn("Ошибка при десериализации запроса: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}
@@ -44,6 +45,7 @@ func (h *UserHandler) UpdateUserInfo(c *gin.Context) {
 
 	userID, err := h.tokenService.DecodeAccessToken(accessToken)
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при декодировании Access-токена")
 		c.Error(err)
 		return
 	}
@@ -51,6 +53,7 @@ func (h *UserHandler) UpdateUserInfo(c *gin.Context) {
 	err = h.userService.UpdateUserInfo(userID, &req)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -82,6 +85,7 @@ func (h *UserHandler) SaveImage(c *gin.Context) {
 
 	userID, err := h.tokenService.DecodeAccessToken(accessToken)
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при декодировании Access-токена")
 		c.Error(err)
 		return
 	}
@@ -89,6 +93,7 @@ func (h *UserHandler) SaveImage(c *gin.Context) {
 	url, err := h.userService.SaveImage(userID, file, fileHeader.Filename)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -105,6 +110,7 @@ func (h *UserHandler) GetMyInfo(c *gin.Context) {
 
 	userID, err := h.tokenService.DecodeAccessToken(accessToken)
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при декодировании Access-токена")
 		c.Error(err)
 		return
 	}
@@ -112,6 +118,7 @@ func (h *UserHandler) GetMyInfo(c *gin.Context) {
 	response, err := h.userService.GetMyInfo(userID)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}

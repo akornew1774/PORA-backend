@@ -36,6 +36,7 @@ func (h *AuthHandler) CheckUser(c *gin.Context) {
 
 	err := c.ShouldBindQuery(&req)
 	if err != nil {
+		logger.Log.Warn("Ошибка при десериализации запроса: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}
@@ -43,6 +44,7 @@ func (h *AuthHandler) CheckUser(c *gin.Context) {
 	response, err := h.authService.CheckUser(req.Phone, req.Email)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -58,12 +60,15 @@ func (h *AuthHandler) RefreshTokens(c *gin.Context) {
 
 	err := c.ShouldBindQuery(&req)
 	if err != nil {
+		logger.Log.Warn("Ошибка при десериализации запроса: ", err)
 		c.Error(errors.ErrorInvalidInput)
 		return
 	}
 
 	response, err := h.authService.GetNewTokens(req.RefreshToken)
+
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -79,6 +84,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 
 	userID, err := h.tokenService.DecodeAccessToken(accessToken)
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при декодировании Access-токена")
 		c.Error(err)
 		return
 	}
@@ -86,6 +92,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	err = h.authService.RemoveRefreshToken(userID)
 
 	if err != nil {
+		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}

@@ -3,6 +3,7 @@ package services
 
 import (
 	"pora/internal/dto/requests"
+	"pora/internal/dto/responses"
 	"pora/internal/errors"
 	"pora/internal/infrastructure/logger"
 	"pora/internal/ports"
@@ -13,20 +14,60 @@ import (
 )
 
 type ItemService struct {
-	familyRepo ports.FamilyRepository
-	listRepo   ports.ListRepository
-	itemRepo   ports.ItemRepository
+	familyRepo  ports.FamilyRepository
+	listRepo    ports.ListRepository
+	itemRepo    ports.ItemRepository
+	listService ports.ListService
 }
 
 // NewItemService создает и возвращает новый объект ItemService
 func NewItemService(familyRepo ports.FamilyRepository,
 	listRepo ports.ListRepository,
-	itemRepo ports.ItemRepository) ports.ItemService {
+	itemRepo ports.ItemRepository,
+	listService ports.ListService) ports.ItemService {
 	return &ItemService{
-		familyRepo: familyRepo,
-		listRepo:   listRepo,
-		itemRepo:   itemRepo,
+		familyRepo:  familyRepo,
+		listRepo:    listRepo,
+		itemRepo:    itemRepo,
+		listService: listService,
 	}
+}
+
+// GetItemInfo получает информацию о конкретном товаре
+func (s *ItemService) GetItemInfo(itemID uuid.UUID) (
+	responses.ItemInfo, error) {
+
+	var response responses.ItemInfo
+
+	item, err := s.itemRepo.FindByID(itemID)
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске товара по ID: ", err)
+		return response, err
+	}
+
+	if item == nil {
+		logger.Log.Warn("Указанный товар не найден")
+		return response, errors.ErrorItemNotFound
+	}
+
+	list, err := s.listRepo.FindByID(item.ListID)
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске списка по ID: ", err)
+		return response, err
+	}
+
+	if list == nil {
+		logger.Log.Warn("Указанный список не найден")
+		return response, errors.ErrorListNotFound
+	}
+
+	response, err = s.listService.СonvertToItemInfo(item, list.FamilyID)
+	if err != nil {
+		logger.Log.Warn("Ошибка при конвертировании товара в нужный формат: ", err)
+		return response, err
+	}
+
+	return response, nil
 }
 
 // ChangeItem изменяет поля определенного товара

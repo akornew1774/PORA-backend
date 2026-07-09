@@ -27,6 +27,7 @@ func NewAppLinkHandler(android config.AndroidConfig,
 
 // AssetLinks обрабатывает настроику ссылок на приложение для Android
 func (h *AppLinkHandler) AssetLinks(c *gin.Context) {
+
 	response := responses.AssetLinksResponse{
 		{
 			Relation: []string{
