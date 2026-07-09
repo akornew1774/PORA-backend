@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS items;
+DROP TABLE IF EXISTS lists;
+DROP TABLE IF EXISTS family_members;
+DROP TABLE IF EXISTS families;
