@@ -36,6 +36,19 @@ func (c *Client) Send(message []byte) error {
 	}
 }
 
+// ReadPump читает полученные по WS-соединению сообщения
+func (c *Client) ReadPump() {
+
+	defer c.Close()
+
+	for {
+		if _, _, err := c.conn.ReadMessage(); err != nil {
+			logger.Log.Info("Ошика при чтении сообщения через WS: ", err)
+			return
+		}
+	}
+}
+
 // WritePump непрерывно отправляет полученные сообщения клиенту
 func (c *Client) WritePump() {
 
@@ -49,6 +62,7 @@ func (c *Client) WritePump() {
 		)
 
 		if err != nil {
+			logger.Log.Info("Ошибка отправки сообщения по WS: ", err)
 			return
 		}
 	}
