@@ -82,7 +82,7 @@ func (h *Hub) SendToUser(userID uuid.UUID, message []byte) {
 	for client := range userClients {
 		err := client.Send(message)
 		if err != nil {
-			logger.Log.Error("Ошибка при отправке сообщения через WS")
+			logger.Log.Info("Ошибка при отправке сообщения через WS")
 		}
 	}
 }

@@ -2,7 +2,9 @@
 package main
 
 import (
+	"context"
 	"os"
+	"os/signal"
 	"pora/internal/config"
 	"pora/internal/handlers"
 	"pora/internal/infrastructure/database"
@@ -10,7 +12,11 @@ import (
 	"pora/internal/infrastructure/storage"
 	"pora/internal/middleware"
 	"pora/internal/repositories"
+	"pora/internal/scheduler"
 	"pora/internal/services"
+	"pora/internal/websocket"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -48,11 +54,22 @@ func main() {
 	}
 	logger.Log.Info("Миграции успешно применены")
 
+	// Создание контекста для единовременной остановки бесконечных процессов
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+	)
+	defer stop()
+
 	// Подключение хранилища
 	storage := storage.NewLocalStorage(os.Getenv("BASE_PATH"))
 
 	// Загрузка конфигураций
 	cfg := config.Load()
+
+	// Создание менеджера соединений для Websocket
+	hub := websocket.NewHub()
 
 	// Подключение репозиториев
 	userRepo := repositories.NewUserRepository(db)
@@ -68,10 +85,10 @@ func main() {
 	fileService := services.NewFileService(storage)
 	authService := services.NewAuthService(userRepo, refreshTokenRepo, tokenService)
 	otpService := services.NewOTPService(otpRepo, userRepo, tokenService)
-	listService := services.NewListService(userRepo, memberRepo, familyRepo, listRepo, itemRepo)
+	listService := services.NewListService(userRepo, memberRepo, familyRepo, listRepo, itemRepo, hub, cfg.Item)
 	userService := services.NewUserService(userRepo, fileService, listService)
 	familyService := services.NewFamilyService(userRepo, memberRepo, familyRepo, listService, cfg.DeepLink)
-	itemService := services.NewItemService(familyRepo, listRepo, itemRepo, listService)
+	itemService := services.NewItemService(familyRepo, listRepo, itemRepo, listService, cfg.Item)
 
 	// Подключение хэндлеров
 	authHandler := handlers.NewAuthHandler(authService, tokenService)
@@ -81,6 +98,15 @@ func main() {
 	listHandler := handlers.NewListHandler(listService, tokenService)
 	itemHandler := handlers.NewItemHandler(itemService, tokenService)
 	appLinkHandler := handlers.NewAppLinkHandler(cfg.Android, cfg.DeepLink)
+	wsHandler := handlers.NewWSHandler(hub, tokenService)
+
+	// Создание объектов Scheduler для выполнений задач по расписанию
+	reminderScheduler := scheduler.NewScheduler(time.Hour, itemService.ProcessReminders)
+	checkedScheduler := scheduler.NewScheduler(time.Hour, itemService.ProcessCheckedItems)
+
+	// Запуск методов созданных Scheduler
+	go reminderScheduler.Run(ctx)
+	go checkedScheduler.Run(ctx)
 
 	// Регистрация маршрутов
 	api := r.Group("/api")
@@ -130,6 +156,9 @@ func main() {
 		items.PATCH("/:item_id/bought", itemHandler.MarkAsBought)
 		items.POST("/:item_id/notify", itemHandler.NotifyMembers)
 	}
+
+	// Маршрут для создания Websocket-соединения
+	api.GET("/websocket", wsHandler.Connect)
 
 	// Маршруты для реализации внутренних ссылок для приложения
 	r.GET("/.well-known/assetlinks.json", appLinkHandler.AssetLinks)

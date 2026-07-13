@@ -45,7 +45,6 @@ func (h *FamilyHandler) GetFamilies(c *gin.Context) {
 	response, err := h.familyService.GetFamilies(userID)
 
 	if err != nil {
-		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -70,7 +69,6 @@ func (h *FamilyHandler) GetLists(c *gin.Context) {
 	response, err := h.familyService.GetLists(familyID)
 
 	if err != nil {
-		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -104,7 +102,6 @@ func (h *FamilyHandler) CreateFamily(c *gin.Context) {
 	response, err := h.familyService.CreateFamily(userID, req.Name)
 
 	if err != nil {
-		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -136,7 +133,6 @@ func (h *FamilyHandler) GetFamilyLink(c *gin.Context) {
 	response, err := h.familyService.GetFamilyLink(familyID)
 
 	if err != nil {
-		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -162,7 +158,6 @@ func (h *FamilyHandler) JoinFamily(c *gin.Context) {
 	err = h.familyService.AddMember(userID, familyCode)
 
 	if err != nil {
-		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -186,7 +181,6 @@ func (h *FamilyHandler) DeleteFamily(c *gin.Context) {
 	err = h.familyService.DeleteFamily(familyID)
 
 	if err != nil {
-		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}

@@ -33,8 +33,11 @@ type Item struct {
 	Priority int `gorm:"default:1"`
 	Urgent   bool
 
-	Checked         bool `gorm:"default:false"`
+	Checked   bool `gorm:"default:false"`
+	CheckedAt *time.Time
+
 	RemindEveryDays *int
+	NextReminderAt  *time.Time
 
 	AddedByID uuid.UUID `gorm:"type:uuid;not null"`
 

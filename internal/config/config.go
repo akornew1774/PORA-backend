@@ -2,13 +2,24 @@
 // с данными для работы приложения
 package config
 
-import "os"
+import (
+	"os"
+	"pora/internal/infrastructure/logger"
+	"strconv"
+)
 
 // Config - объект, содержащий все
 // конфигурации для работы приложения
 type Config struct {
+	Item     ItemConfig
 	DeepLink DeepLinkConfig
 	Android  AndroidConfig
+}
+
+// ItemConfig - конфигурация с нужными значениями для работы с товарами
+type ItemConfig struct {
+	DefaultReminderTime  string
+	UncheckIntervalHours int
 }
 
 // DeepLinkConfig - конфигурация для создания ссылок на приложение
@@ -26,7 +37,20 @@ type AndroidConfig struct {
 // Load загружает всю информацию для конфигураций
 // и возвращает заполненный объект Config
 func Load() *Config {
+	uncheckIntervalHours, err := strconv.Atoi(
+		os.Getenv("UNCHECK_INTERVAL_HOURS"),
+	)
+	if err != nil {
+		logger.Log.Error("Ошибка при конветрации значений .env файла: ", err)
+		uncheckIntervalHours = 24
+	}
+
 	return &Config{
+		Item: ItemConfig{
+			DefaultReminderTime:  os.Getenv("DEFAULT_REMINDER_TIME"),
+			UncheckIntervalHours: uncheckIntervalHours,
+		},
+
 		DeepLink: DeepLinkConfig{
 			Host:         os.Getenv("BASE_URL"),
 			DownloadLink: os.Getenv("DOWNLOAD_LINK"),

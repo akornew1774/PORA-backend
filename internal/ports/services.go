@@ -126,6 +126,11 @@ type ListService interface {
 	// responses.ItemInfo, при этом добавляя информацию о добавившем его пользователе
 	СonvertToItemInfo(item *entities.Item,
 		familyID *uuid.UUID) (responses.ItemInfo, error)
+
+	// SendChangesToFamily отправляет уведомление об изменении
+	// семьи/списка/товара через Websocket
+	SendChangesToFamily(family *entities.Family,
+		listID *uuid.UUID, itemID *uuid.UUID) error
 }
 
 // ItemService содержит порты для методов для
@@ -148,4 +153,13 @@ type ItemService interface {
 	// определенном продукте. К уведомлению можно прикрепить сообщение
 	NotifyMembers(userID uuid.UUID, itemID uuid.UUID,
 		req requests.NotifyMembersRequest) error
+
+	// ProcessReminders находит товары, о которых нужно уведомить
+	// пользователя, и вызывает методы для отправки уведомлений
+	ProcessReminders() error
+
+	// ProcessCheckedItems находит товары, для которых
+	// необходимо убрать значение true в поле Checked /
+	// удалить товар (если нет значения RemindEveryDays)
+	ProcessCheckedItems() error
 }

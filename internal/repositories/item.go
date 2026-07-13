@@ -5,6 +5,7 @@ import (
 	"errors"
 	"pora/internal/entities"
 	"pora/internal/ports"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -33,6 +34,41 @@ func (r *ItemRepo) FindByID(itemID uuid.UUID) (*entities.Item, error) {
 		return nil, err
 	}
 	return &item, nil
+}
+
+// FindItemsToRemind находит все товары, о которых
+// нужно уведомить в определенный момент времени
+func (r *ItemRepo) FindItemsToRemind(
+	now time.Time) ([]entities.Item, error) {
+
+	var items []entities.Item
+
+	err := r.db.
+		Where("checked = ?", false).
+		Where("remind_every_days IS NOT NULL").
+		Where("next_reminder_at IS NOT NULL").
+		Where("next_reminder_at <= ?", now).
+		Find(&items).
+		Error
+
+	return items, err
+}
+
+// FindItemsToUncheck находит все товары, для
+// которых нужно изменить поле checked на false
+func (r *ItemRepo) FindItemsToUncheck(
+	intervalAgo time.Time) ([]entities.Item, error) {
+
+	var items []entities.Item
+
+	err := r.db.
+		Where("checked = ?", true).
+		Where("checked_at IS NOT NULL").
+		Where("checked_at <= ?", intervalAgo).
+		Find(&items).
+		Error
+
+	return items, err
 }
 
 // CreateItem создает новый объект товара в БД

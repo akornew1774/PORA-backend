@@ -45,7 +45,6 @@ func (h *ItemHandler) GetItemInfo(c *gin.Context) {
 	response, err := h.itemService.GetItemInfo(itemID)
 
 	if err != nil {
-		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -79,7 +78,6 @@ func (h *ItemHandler) ChangeItem(c *gin.Context) {
 	err = h.itemService.ChangeItem(itemID, req)
 
 	if err != nil {
-		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -104,7 +102,6 @@ func (h *ItemHandler) DeleteItem(c *gin.Context) {
 	err = h.itemService.DeleteItem(itemID)
 
 	if err != nil {
-		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -129,7 +126,6 @@ func (h *ItemHandler) MarkAsBought(c *gin.Context) {
 	err = h.itemService.MarkAsBought(itemID)
 
 	if err != nil {
-		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -172,7 +168,6 @@ func (h *ItemHandler) NotifyMembers(c *gin.Context) {
 	err = h.itemService.NotifyMembers(userID, itemID, req)
 
 	if err != nil {
-		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}

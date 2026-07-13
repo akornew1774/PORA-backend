@@ -54,7 +54,6 @@ func (h *ListHandler) CreateList(c *gin.Context) {
 	response, err := h.listService.CreateList(userID, req.FamilyID, req.Name)
 
 	if err != nil {
-		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -79,7 +78,6 @@ func (h *ListHandler) GetListInfo(c *gin.Context) {
 	response, err := h.listService.GetListInfo(listID)
 
 	if err != nil {
-		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -122,7 +120,6 @@ func (h *ListHandler) AddItem(c *gin.Context) {
 	response, err := h.listService.AddItem(userID, listID, req)
 
 	if err != nil {
-		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}
@@ -146,7 +143,6 @@ func (h *ListHandler) DeleteList(c *gin.Context) {
 	err = h.listService.DeleteList(listID)
 
 	if err != nil {
-		logger.Log.Warn("Возникла ошибка при работе сервиса")
 		c.Error(err)
 		return
 	}

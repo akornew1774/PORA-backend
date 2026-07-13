@@ -2,12 +2,15 @@
 package services
 
 import (
+	"encoding/json"
+	"pora/internal/config"
 	"pora/internal/dto/requests"
 	"pora/internal/dto/responses"
 	"pora/internal/entities"
 	"pora/internal/errors"
 	"pora/internal/infrastructure/logger"
 	"pora/internal/ports"
+	"pora/internal/websocket"
 	"sort"
 	"time"
 
@@ -24,6 +27,8 @@ type ListService struct {
 	familyRepo ports.FamilyRepository
 	listRepo   ports.ListRepository
 	itemRepo   ports.ItemRepository
+	hub        ports.Hub
+	itemConfig config.ItemConfig
 }
 
 // NewListService создает и возвращает новый объект ListService
@@ -31,13 +36,17 @@ func NewListService(userRepo ports.UserRepository,
 	memberRepo ports.MemberRepository,
 	familyRepo ports.FamilyRepository,
 	listRepo ports.ListRepository,
-	itemRepo ports.ItemRepository) ports.ListService {
+	itemRepo ports.ItemRepository,
+	hub ports.Hub,
+	itemConfig config.ItemConfig) ports.ListService {
 	return &ListService{
 		userRepo:   userRepo,
 		memberRepo: memberRepo,
 		familyRepo: familyRepo,
 		listRepo:   listRepo,
 		itemRepo:   itemRepo,
+		hub:        hub,
+		itemConfig: itemConfig,
 	}
 }
 
@@ -72,7 +81,7 @@ func (s *ListService) CreateList(userID uuid.UUID,
 
 	} else {
 
-		family, err := s.familyRepo.FindByID(*familyID)
+		family, err := s.familyRepo.FindWithMembers(*familyID)
 		if err != nil {
 			logger.Log.Error("Ошибка при поиске семьи: ", err)
 			return response, err
@@ -84,6 +93,11 @@ func (s *ListService) CreateList(userID uuid.UUID,
 		}
 
 		newList.FamilyID = familyID
+
+		err = s.SendChangesToFamily(family, nil, nil)
+		if err != nil {
+			logger.Log.Warn("Ошибка при отправке изменений членам семьи: ", err)
+		}
 	}
 
 	err := s.listRepo.CreateList(newList)
@@ -153,6 +167,40 @@ func (s *ListService) AddItem(userID uuid.UUID, listID uuid.UUID,
 		AddedByID: userID,
 	}
 
+	if item.Checked == true {
+		checkedAt := time.Now()
+		item.CheckedAt = &checkedAt
+	}
+
+	if item.RemindEveryDays != nil && *item.RemindEveryDays <= 0 {
+		logger.Log.Warn("Некорректный формат RemindEveryDays")
+		return response, errors.ErrorInvalidInput
+	}
+
+	if item.RemindEveryDays != nil {
+
+		t, err := time.Parse("15:04", s.itemConfig.DefaultReminderTime)
+		if err != nil {
+			logger.Log.Error("Ошибка при парсинге времени: ", err)
+			return response, err
+		}
+
+		nextDate := time.Now().AddDate(0, 0, *item.RemindEveryDays)
+
+		nextReminder := time.Date(
+			nextDate.Year(),
+			nextDate.Month(),
+			nextDate.Day(),
+			t.Hour(),
+			t.Minute(),
+			0,
+			0,
+			nextDate.Location(),
+		)
+
+		item.NextReminderAt = &nextReminder
+	}
+
 	list, err := s.listRepo.FindByID(listID)
 	if err != nil {
 		logger.Log.Error("Ошибка при поиске списка по ID: ", err)
@@ -179,6 +227,26 @@ func (s *ListService) AddItem(userID uuid.UUID, listID uuid.UUID,
 	}
 
 	response.ID = itemID
+
+	if list.FamilyID != nil && *list.FamilyID != uuid.Nil {
+
+		family, err := s.familyRepo.FindWithMembers(*list.FamilyID)
+		if err != nil {
+			logger.Log.Error("Ошибка при поиске семьи: ", err)
+			return response, nil
+		}
+
+		if family == nil {
+			logger.Log.Warn("Указанная семья не найдена")
+			return response, nil
+		}
+
+		err = s.SendChangesToFamily(family, &listID, nil)
+		if err != nil {
+			logger.Log.Warn("Ошибка при отправке изменений членам семьи: ", err)
+		}
+	}
+
 	return response, nil
 }
 
@@ -200,6 +268,25 @@ func (s *ListService) DeleteList(listID uuid.UUID) error {
 	if err != nil {
 		logger.Log.Error("Ошибка при удалении списка продуктов: ", err)
 		return err
+	}
+
+	if list.FamilyID != nil && *list.FamilyID != uuid.Nil {
+
+		family, err := s.familyRepo.FindWithMembers(*list.FamilyID)
+		if err != nil {
+			logger.Log.Error("Ошибка при поиске семьи: ", err)
+			return nil
+		}
+
+		if family == nil {
+			logger.Log.Warn("Указанная семья не найдена")
+			return nil
+		}
+
+		err = s.SendChangesToFamily(family, nil, nil)
+		if err != nil {
+			logger.Log.Warn("Ошибка при отправке изменений членам семьи: ", err)
+		}
 	}
 
 	return nil
@@ -380,4 +467,28 @@ func (s *ListService) СonvertToItemInfo(item *entities.Item,
 	itemInfo.AddedBy = memberInfo
 
 	return itemInfo, nil
+}
+
+// SendChangesToFamily отправляет уведомление об изменении
+// семьи/списка/товара через Websocket
+func (s *ListService) SendChangesToFamily(family *entities.Family,
+	listID *uuid.UUID, itemID *uuid.UUID) error {
+
+	message := websocket.SendChangesMessage{
+		FamilyID: &family.ID,
+		ListID:   listID,
+		ItemID:   itemID,
+	}
+
+	data, err := json.Marshal(message)
+	if err != nil {
+		logger.Log.Error("Ошибка при сериализации сообщения в JSON: ", err)
+		return err
+	}
+
+	for _, member := range family.Members {
+		s.hub.SendToUser(member.UserID, data)
+	}
+
+	return nil
 }

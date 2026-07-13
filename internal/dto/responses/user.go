@@ -10,10 +10,15 @@ import (
 // UserInfo - структура, содержащая краткую
 // информацию о пользователе
 type UserInfo struct {
-	ID       uuid.UUID `json:"id"`
-	Name     string    `json:"name"`
-	Surname  string    `json:"surname"`
-	ImageURL string    `json:"image-url,omitempty"`
+	ID uuid.UUID `json:"id"`
+
+	Phone string `json:"phone,omitempty"`
+	Email string `json:"email,omitempty"`
+
+	Name    string `json:"name"`
+	Surname string `json:"surname"`
+
+	ImageURL string `json:"image-url,omitempty"`
 }
 
 // FamilyMemberInfo - структура, содержащая

@@ -131,6 +131,8 @@ func (s *UserService) GetMyInfo(userID uuid.UUID) (
 
 	response.UserInfo = responses.UserInfo{
 		ID:       userID,
+		Phone:    user.Phone,
+		Email:    user.Email,
 		Name:     user.Name,
 		Surname:  user.Surname,
 		ImageURL: baseURL + user.ImageURL,

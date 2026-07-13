@@ -3,6 +3,7 @@ package ports
 
 import (
 	"pora/internal/entities"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -128,6 +129,14 @@ type ListRepository interface {
 type ItemRepository interface {
 	// FindByID находит товар из списка продуктов по ID
 	FindByID(itemID uuid.UUID) (*entities.Item, error)
+
+	// FindItemsToRemind находит все товары, о которых
+	// нужно уведомить в определенный момент времени
+	FindItemsToRemind(now time.Time) ([]entities.Item, error)
+
+	// FindItemsToUncheck находит все товары, для
+	// которых нужно изменить поле checked на false
+	FindItemsToUncheck(intervalAgo time.Time) ([]entities.Item, error)
 
 	// CreateItem создает новый объект товара в БД
 	CreateItem(item *entities.Item) error
