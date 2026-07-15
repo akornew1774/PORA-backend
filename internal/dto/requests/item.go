@@ -14,7 +14,7 @@ type ChangeItemRequest struct {
 	Quantity float64 `json:"quantity" binding:"required"`
 	Unit     string  `json:"unit" binding:"required"`
 
-	Priority int  `json:"priority" binding:"required"`
+	Priority int  `json:"priority"`
 	Urgent   bool `json:"urgent"`
 
 	Checked         bool `json:"checked"`

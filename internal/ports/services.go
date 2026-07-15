@@ -35,7 +35,7 @@ type OtpService interface {
 	SendOtp(rawPhone string, email string) error
 
 	// VerifyOtp сравнивает полученный Otp-код c сохраненным в БД
-	VerifyOtp(rawPhone string, email string, otp string) (
+	VerifyOtp(req requests.VerifyOtpRequest) (
 		responses.VerifyOtpResponse, error)
 }
 

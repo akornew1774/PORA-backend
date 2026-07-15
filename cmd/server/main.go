@@ -99,7 +99,7 @@ func main() {
 	fileService := services.NewFileService(storage)
 	pushService := services.NewPushService(deviceRepo, firebaseClient, cfg.Push)
 	authService := services.NewAuthService(userRepo, refreshTokenRepo, tokenService)
-	otpService := services.NewOTPService(otpRepo, userRepo, tokenService)
+	otpService := services.NewOTPService(otpRepo, userRepo, deviceRepo, tokenService)
 	listService := services.NewListService(userRepo, memberRepo, familyRepo, listRepo, itemRepo, hub, cfg.Item)
 	userService := services.NewUserService(userRepo, fileService, listService)
 	familyService := services.NewFamilyService(userRepo, memberRepo, familyRepo, listService, cfg.DeepLink)

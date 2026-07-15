@@ -2,6 +2,7 @@
 package services
 
 import (
+	"pora/internal/dto/requests"
 	"pora/internal/dto/responses"
 	"pora/internal/entities"
 	"pora/internal/errors"
@@ -18,6 +19,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/nyaruka/phonenumbers"
 	"gopkg.in/mail.v2"
 )
@@ -26,6 +28,7 @@ import (
 type OtpService struct {
 	otpRepo      ports.OtpRepository
 	userRepo     ports.UserRepository
+	deviceRepo   ports.DeviceRepository
 	tokenService ports.TokenService
 }
 
@@ -33,10 +36,12 @@ type OtpService struct {
 func NewOTPService(
 	otpRepo ports.OtpRepository,
 	userRepo ports.UserRepository,
+	deviceRepo ports.DeviceRepository,
 	tokenService ports.TokenService) ports.OtpService {
 	return &OtpService{
 		otpRepo:      otpRepo,
 		userRepo:     userRepo,
+		deviceRepo:   deviceRepo,
 		tokenService: tokenService,
 	}
 }
@@ -100,14 +105,18 @@ func (s *OtpService) SendOtp(rawPhone string, email string) error {
 }
 
 // VerifyOtp сравнивает полученный Otp-код c сохраненным в БД
-func (s *OtpService) VerifyOtp(rawPhone string, email string,
-	otp string) (responses.VerifyOtpResponse, error) {
+func (s *OtpService) VerifyOtp(req requests.VerifyOtpRequest) (
+	responses.VerifyOtpResponse, error) {
 
 	var (
 		otpEntity *entities.Otp
 		err       error
 		phone     string
 	)
+
+	rawPhone := req.Phone
+	email := req.Email
+	otp := req.OTP
 
 	if rawPhone == "" && email == "" {
 		logger.Log.Warn("В запросе ни указан ни телефон, ни email")
@@ -177,9 +186,12 @@ func (s *OtpService) VerifyOtp(rawPhone string, email string,
 		return responses.VerifyOtpResponse{}, err
 	}
 
+	userID := uuid.New()
+
 	var status string
 	if user == nil {
 		user = &entities.User{
+			ID:    userID,
 			Phone: phone,
 			Email: email,
 		}
@@ -196,6 +208,14 @@ func (s *OtpService) VerifyOtp(rawPhone string, email string,
 		status = string(user.Status)
 	}
 
+	if req.DeviceToken != "" && req.DeviceType != "" {
+		err := s.changeUserDevice(user.ID, req.DeviceToken, req.DeviceType)
+		if err != nil {
+			logger.Log.Warn("Ошибка при обновлении устройства пользователя")
+			return responses.VerifyOtpResponse{}, err
+		}
+	}
+
 	accessToken, refreshToken, err := s.tokenService.CreateTokens(user)
 	if err != nil {
 		logger.Log.Error("Ошибка при генерации токенов: ", err)
@@ -208,6 +228,50 @@ func (s *OtpService) VerifyOtp(rawPhone string, email string,
 		Status:       status,
 	}
 	return response, nil
+}
+
+// changeUserDevice создает запись в БД о новом устройстве пользователя
+func (s *OtpService) changeUserDevice(userID uuid.UUID,
+	deviceToken string, deviceType string) error {
+
+	if deviceType != string(entities.AndroidDevice) &&
+		deviceType != string(entities.IOSDevice) {
+		logger.Log.Warn("Некорректный тип устройства")
+		return errors.ErrorInvalidInput
+	}
+
+	device, err := s.deviceRepo.FindByUserID(userID)
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске устройства: ", err)
+		return err
+	}
+
+	if device != nil {
+
+		if device.DeviceToken == deviceToken {
+			return nil
+		}
+
+		err = s.deviceRepo.DeleteDevice(device)
+		if err != nil {
+			logger.Log.Error("Ошибка при удалении устройства: ", err)
+			return err
+		}
+	}
+
+	newDevice := &entities.Device{
+		UserID:      userID,
+		DeviceToken: deviceToken,
+		DeviceType:  entities.DeviceType(deviceType),
+	}
+
+	err = s.deviceRepo.CreateDevice(newDevice)
+	if err != nil {
+		logger.Log.Error("Ошибка при создании нового устройства в БД: ", err)
+		return err
+	}
+
+	return nil
 }
 
 // generateOtp генерирует случайный OTP-код

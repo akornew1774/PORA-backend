@@ -60,7 +60,7 @@ func (h *OtpHandler) VerifyOTP(c *gin.Context) {
 		return
 	}
 
-	response, err := h.otpService.VerifyOtp(req.Phone, req.Email, req.OTP)
+	response, err := h.otpService.VerifyOtp(req)
 
 	if err != nil {
 		c.Error(err)

@@ -6,6 +6,9 @@ type VerifyOtpRequest struct {
 	Phone string `json:"phone"`
 	Email string `json:"email"`
 	OTP   string `json:"otp" binding:"required"`
+
+	DeviceToken string `json:"device-token"`
+	DeviceType  string `json:"device-type"`
 }
 
 // RefreshRequest - структура для запроса на обновление refresh токена
