@@ -12,6 +12,8 @@ import (
 // конфигурации для работы приложения
 type Config struct {
 	Item     ItemConfig
+	FireBase FirebaseConfig
+	Push     PushConfig
 	DeepLink DeepLinkConfig
 	Android  AndroidConfig
 }
@@ -20,6 +22,18 @@ type Config struct {
 type ItemConfig struct {
 	DefaultReminderTime  string
 	UncheckIntervalHours int
+}
+
+// FirebaseConfig - конфигурация с нужными для отправки уведомлений через Firebase значениями
+type FirebaseConfig struct {
+	ProjectID   string
+	ClientEmail string
+	PrivateKey  string
+}
+
+// PushConfig - конфигурация с нужными для отправки Push-уведомлений общими данными
+type PushConfig struct {
+	// TODO: заполнить конфиг
 }
 
 // DeepLinkConfig - конфигурация для создания ссылок на приложение
@@ -50,6 +64,14 @@ func Load() *Config {
 			DefaultReminderTime:  os.Getenv("DEFAULT_REMINDER_TIME"),
 			UncheckIntervalHours: uncheckIntervalHours,
 		},
+
+		FireBase: FirebaseConfig{
+			ProjectID:   os.Getenv("FIREBASE_PROJECT_ID"),
+			ClientEmail: os.Getenv("FIREBASE_CLIENT_EMAIL"),
+			PrivateKey:  os.Getenv("FIREBASE_PRIVATE_KEY"),
+		},
+
+		Push: PushConfig{},
 
 		DeepLink: DeepLinkConfig{
 			Host:         os.Getenv("BASE_URL"),
