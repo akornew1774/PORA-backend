@@ -61,6 +61,37 @@ func (h *UserHandler) UpdateUserInfo(c *gin.Context) {
 	c.JSON(http.StatusOK, responses.GenericResponse{})
 }
 
+func (h *UserHandler) UpdateDevice(c *gin.Context) {
+
+	var req requests.UpdateDeviceRequest
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		logger.Log.Warn("Ошибка при десериализации запроса: ", err)
+		c.Error(errors.ErrorInvalidInput)
+		return
+	}
+
+	accessToken := c.GetHeader("Authorization")
+
+	userID, err := h.tokenService.DecodeAccessToken(accessToken)
+	if err != nil {
+		logger.Log.Warn("Возникла ошибка при декодировании Access-токена")
+		c.Error(err)
+		return
+	}
+
+	err = h.userService.UpdateDevice(userID, req.DeviceToken, req.DeviceType)
+
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	logger.Log.Info("Обновление устройства успешно выполнено")
+	c.JSON(http.StatusOK, responses.GenericResponse{})
+}
+
 // SaveImage обрабатывает запрос на сохранение
 // изображения для профиля пользователя
 func (h *UserHandler) SaveImage(c *gin.Context) {

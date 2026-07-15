@@ -3,6 +3,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"pora/internal/config"
 	"pora/internal/dto/notifications"
 	"pora/internal/errors"
@@ -70,23 +71,93 @@ func (s *PushService) SendToUser(ctx context.Context,
 // SendItemNotification отправляет пользователю
 // Push-уведомление о конкретном товаре от члена семьи
 func (s *PushService) SendItemNotification(ctx context.Context,
-	userID uuid.UUID, itemID uuid.UUID, listID uuid.UUID,
-	familyID uuid.UUID, message string) error {
+	itemNotification notifications.ItemNotification) error {
 
-	// TODO: сделать формирование уведомления
-	notification := notifications.Notification{}
+	var title string
+	var body string
 
-	return s.SendToUser(ctx, userID, notification)
+	if itemNotification.Message != "" {
+
+		title = itemNotification.Message
+
+		body = fmt.Sprintf(
+			"%s просит купить %s, %s %s",
+			itemNotification.AuthorName,
+			itemNotification.ItemName,
+			itemNotification.ItemQuantity,
+			itemNotification.ItemUnit,
+		)
+
+	} else {
+
+		title = fmt.Sprintf(
+			"Купи %s, %s %s",
+			itemNotification.ItemName,
+			itemNotification.ItemQuantity,
+			itemNotification.ItemUnit,
+		)
+
+		body = fmt.Sprintf(
+			"%s отправил(а) сообщение о товаре из списка \"%s\"",
+			itemNotification.AuthorName,
+			itemNotification.ListName,
+		)
+	}
+
+	data := make(map[string]string)
+
+	data["type"] = s.cfg.NotificationType
+	data["screen"] = s.cfg.NotificationScreen
+
+	data["family-id"] = itemNotification.FamilyID.String()
+	data["list-id"] = itemNotification.ListID.String()
+	data["item-id"] = itemNotification.ItemID.String()
+
+	notification := notifications.Notification{
+		Title: title,
+		Body:  body,
+		Data:  data,
+	}
+
+	return s.SendToUser(ctx, itemNotification.UserID, notification)
 }
 
 // SendItemReminder отправляет пользователю
 // Push-уведомление с напоминанием о конкретном товаре
 func (s *PushService) SendItemReminder(ctx context.Context,
-	userID uuid.UUID, itemID uuid.UUID, listID uuid.UUID,
-	familyID *uuid.UUID) error {
+	itemReminder notifications.ItemReminder) error {
 
-	// TODO: сделать формирование напомнинания
-	notification := notifications.Notification{}
+	title := fmt.Sprintf(
+		"Не забудьте купить %s, %s %s",
+		itemReminder.ItemName,
+		itemReminder.ItemQuantity,
+		itemReminder.ItemUnit,
+	)
 
-	return s.SendToUser(ctx, userID, notification)
+	body := fmt.Sprintf(
+		"Напоминание о товаре из списка \"%s\"",
+		itemReminder.ListName,
+	)
+
+	data := make(map[string]string)
+
+	data["type"] = s.cfg.NotificationType
+	data["screen"] = s.cfg.NotificationScreen
+
+	data["list-id"] = itemReminder.ListID.String()
+	data["item-id"] = itemReminder.ItemID.String()
+
+	familyID := itemReminder.FamilyID
+
+	if familyID != nil && *familyID != uuid.Nil {
+		data["family-id"] = familyID.String()
+	}
+
+	notification := notifications.Notification{
+		Title: title,
+		Body:  body,
+		Data:  data,
+	}
+
+	return s.SendToUser(ctx, itemReminder.UserID, notification)
 }

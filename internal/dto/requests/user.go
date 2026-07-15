@@ -10,3 +10,10 @@ type UpdateUserRequest struct {
 	Name    *string `json:"name,omitempty"`
 	Surname *string `json:"surname,omitempty"`
 }
+
+// UpdateDeviceRequest - структура для запроса
+// на обновление устройства пользователя
+type UpdateDeviceRequest struct {
+	DeviceToken string `json:"device-token" binding:"required"`
+	DeviceType  string `json:"device-type" binding:"required"`
+}

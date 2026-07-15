@@ -4,12 +4,15 @@ package services
 import (
 	"context"
 	"pora/internal/config"
+	"pora/internal/dto/notifications"
 	"pora/internal/dto/requests"
 	"pora/internal/dto/responses"
+	"pora/internal/entities"
 	"pora/internal/errors"
 	"pora/internal/infrastructure/logger"
 	"pora/internal/ports"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -322,7 +325,7 @@ func (s *ItemService) MarkAsBought(itemID uuid.UUID) error {
 
 // NotifyMembers уведомляет указанных членов семьи об
 // определенном продукте. К уведомлению можно прикрепить сообщение
-func (s *ItemService) NotifyMembers(ctx context.Context, userID uuid.UUID,
+func (s *ItemService) NotifyMembers(ctx context.Context, authorID uuid.UUID,
 	itemID uuid.UUID, req requests.NotifyMembersRequest) error {
 
 	item, err := s.itemRepo.FindByID(itemID)
@@ -363,6 +366,8 @@ func (s *ItemService) NotifyMembers(ctx context.Context, userID uuid.UUID,
 		return errors.ErrorFamilyNotFound
 	}
 
+	var author *entities.User
+
 	for _, member := range family.Members {
 
 		user := member.User
@@ -372,20 +377,63 @@ func (s *ItemService) NotifyMembers(ctx context.Context, userID uuid.UUID,
 			continue
 		}
 
-		if user.ID == userID {
+		if user.ID == authorID {
+			author = user
+			break
+		}
+	}
+
+	if author == nil {
+		logger.Log.Warn("Отправитель уведомления не принадлежит семье")
+		return errors.ErrorForbidden
+	}
+
+	for _, member := range family.Members {
+
+		user := member.User
+
+		if user == nil {
+			logger.Log.Error("Член семьи не найден")
+			continue
+		}
+
+		if user.ID == authorID {
 			continue
 		}
 
 		if len(req.To) == 0 || slices.Contains(req.To, user.ID) {
 
-			err := s.pushService.SendItemNotification(
-				ctx,
-				userID,
-				itemID,
-				list.ID,
-				family.ID,
-				req.Message,
-			)
+			var quantityStr string
+
+			quantity := item.Quantity
+
+			if quantity == float64(int64(quantity)) {
+				quantityStr = strconv.FormatInt(int64(quantity), 10)
+			} else {
+				quantityStr = strconv.FormatFloat(quantity, 'f', -1, 64)
+			}
+
+			itemNotification := notifications.ItemNotification{
+				UserID: user.ID,
+
+				AuthorID:   author.ID,
+				AuthorName: author.Name,
+
+				ItemID:       item.ID,
+				ItemName:     item.Name,
+				ItemQuantity: quantityStr,
+				ItemUnit:     item.Unit,
+
+				ListID:   list.ID,
+				ListName: list.Name,
+
+				FamilyID:   family.ID,
+				FamilyName: family.Name,
+
+				Message: req.Message,
+			}
+
+			err := s.pushService.SendItemNotification(ctx, itemNotification)
 			if err != nil {
 				logger.Log.Warn("Ошибка при отправке Push-уведомления", err)
 				continue
@@ -419,13 +467,27 @@ func (s *ItemService) ProcessReminders(ctx context.Context) error {
 			return errors.ErrorListNotFound
 		}
 
-		s.remindFamilyMembers(
-			ctx,
-			list.UserID,
-			list.FamilyID,
-			item.ListID,
-			item.ID,
-		)
+		var quantityStr string
+
+		quantity := item.Quantity
+
+		if quantity == float64(int64(quantity)) {
+			quantityStr = strconv.FormatInt(int64(quantity), 10)
+		} else {
+			quantityStr = strconv.FormatFloat(quantity, 'f', -1, 64)
+		}
+
+		itemReminder := notifications.ItemReminder{
+			ItemID:       item.ID,
+			ItemName:     item.Name,
+			ItemQuantity: quantityStr,
+			ItemUnit:     item.Unit,
+
+			ListID:   list.ID,
+			ListName: list.Name,
+		}
+
+		s.remindFamilyMembers(ctx, itemReminder, list.UserID, list.FamilyID)
 
 		nextReminder := item.NextReminderAt.AddDate(0, 0, *item.RemindEveryDays)
 
@@ -447,18 +509,15 @@ func (s *ItemService) ProcessReminders(ctx context.Context) error {
 
 // remindFamilyMembers вызывает метод PushService для
 // отправки напоминаний о товаре всем членам семьи
-func (s *ItemService) remindFamilyMembers(ctx context.Context, userID *uuid.UUID,
-	familyID *uuid.UUID, listID uuid.UUID, itemID uuid.UUID) {
+func (s *ItemService) remindFamilyMembers(ctx context.Context,
+	itemReminder notifications.ItemReminder,
+	userID *uuid.UUID, familyID *uuid.UUID) {
 
 	if familyID == nil || *familyID == uuid.Nil {
 
-		err := s.pushService.SendItemReminder(
-			ctx,
-			*userID,
-			itemID,
-			listID,
-			nil,
-		)
+		itemReminder.UserID = *userID
+
+		err := s.pushService.SendItemReminder(ctx, itemReminder)
 
 		if err != nil {
 			logger.Log.Warn("Ошибка при отправке Push-уведомления: ", err)
@@ -474,15 +533,21 @@ func (s *ItemService) remindFamilyMembers(ctx context.Context, userID *uuid.UUID
 		logger.Log.Warn("Указанная семья не найдена")
 	}
 
+	itemReminder.FamilyID = familyID
+	itemReminder.FamilyName = &family.Name
+
 	for _, member := range family.Members {
 
-		err := s.pushService.SendItemReminder(
-			ctx,
-			member.UserID,
-			itemID,
-			listID,
-			familyID,
-		)
+		user := member.User
+
+		if user == nil {
+			logger.Log.Error("Член семьи не найден")
+			continue
+		}
+
+		itemReminder.UserID = user.ID
+
+		err := s.pushService.SendItemReminder(ctx, itemReminder)
 
 		if err != nil {
 			logger.Log.Warn("Ошибка при отправке Push-уведомления: ", err)

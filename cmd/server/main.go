@@ -139,6 +139,7 @@ func main() {
 	user := api.Group("/user")
 	{
 		user.PATCH("/update", userHandler.UpdateUserInfo)
+		user.PUT("/device", userHandler.UpdateDevice)
 		user.POST("/save-image", userHandler.SaveImage)
 		user.GET("/me", userHandler.GetMyInfo)
 	}

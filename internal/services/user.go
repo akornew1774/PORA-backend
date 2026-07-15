@@ -18,6 +18,7 @@ import (
 // UserService - объект, содержащий методы для работы с пользователями
 type UserService struct {
 	userRepo    ports.UserRepository
+	deviceRepo  ports.DeviceRepository
 	fileService ports.FileService
 	listService ports.ListService
 }
@@ -68,6 +69,57 @@ func (s *UserService) UpdateUserInfo(
 	err = s.userRepo.UpdateUser(user)
 	if err != nil {
 		logger.Log.Error("Ошибка при обновлении пользователя: ", err)
+		return err
+	}
+
+	return nil
+}
+
+// UpdateDevice обновляет токен устройства у пользователя
+func (s *UserService) UpdateDevice(userID uuid.UUID,
+	deviceToken string, deviceType string) error {
+
+	if deviceToken == "" || deviceType == "" {
+		logger.Log.Warn("Отсутствуют необходимые поля")
+		return errors.ErrorInvalidInput
+	}
+
+	if deviceType != string(entities.AndroidDevice) &&
+		deviceType != string(entities.IOSDevice) {
+
+		logger.Log.Warn("Некорректный тип устройства")
+		return errors.ErrorInvalidInput
+	}
+
+	device, err := s.deviceRepo.FindByUserID(userID)
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске устройства пользователя: ", err)
+		return err
+	}
+
+	if device != nil {
+
+		device.DeviceToken = deviceToken
+		device.DeviceType = entities.DeviceType(deviceType)
+
+		err := s.deviceRepo.UpdateDevice(device)
+		if err != nil {
+			logger.Log.Error("Ошибка при обновлении устройства: ", err)
+			return err
+		}
+
+		return nil
+	}
+
+	newDevice := &entities.Device{
+		UserID:      userID,
+		DeviceToken: deviceToken,
+		DeviceType:  entities.DeviceType(deviceType),
+	}
+
+	err = s.deviceRepo.CreateDevice(newDevice)
+	if err != nil {
+		logger.Log.Error("Ошибка при обновлении устройства")
 		return err
 	}
 

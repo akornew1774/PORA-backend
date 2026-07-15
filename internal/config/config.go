@@ -33,7 +33,8 @@ type FirebaseConfig struct {
 
 // PushConfig - конфигурация с нужными для отправки Push-уведомлений общими данными
 type PushConfig struct {
-	// TODO: заполнить конфиг
+	NotificationType   string
+	NotificationScreen string
 }
 
 // DeepLinkConfig - конфигурация для создания ссылок на приложение
@@ -71,7 +72,10 @@ func Load() *Config {
 			PrivateKey:  os.Getenv("FIREBASE_PRIVATE_KEY"),
 		},
 
-		Push: PushConfig{},
+		Push: PushConfig{
+			NotificationType:   os.Getenv("NOTIFICATION_TYPE"),
+			NotificationScreen: os.Getenv("NOTIFICATION_SCREEN"),
+		},
 
 		DeepLink: DeepLinkConfig{
 			Host:         os.Getenv("BASE_URL"),

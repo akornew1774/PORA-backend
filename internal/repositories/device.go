@@ -46,6 +46,11 @@ func (r *DeviceRepo) CreateDevice(device *entities.Device) error {
 	return r.db.Create(device).Error
 }
 
+// UpdateDevice обновляет существующий объект устройства в БД
+func (r *DeviceRepo) UpdateDevice(device *entities.Device) error {
+	return r.db.Save(device).Error
+}
+
 // DeleteDevice удаляет существующий объект устройства в БД
 func (r *DeviceRepo) DeleteDevice(device *entities.Device) error {
 	return r.db.Delete(device).Error

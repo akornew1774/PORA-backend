@@ -236,6 +236,7 @@ func (s *OtpService) changeUserDevice(userID uuid.UUID,
 
 	if deviceType != string(entities.AndroidDevice) &&
 		deviceType != string(entities.IOSDevice) {
+
 		logger.Log.Warn("Некорректный тип устройства")
 		return errors.ErrorInvalidInput
 	}

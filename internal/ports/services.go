@@ -20,6 +20,10 @@ type UserService interface {
 	UpdateUserInfo(userID uuid.UUID,
 		req *requests.UpdateUserRequest) error
 
+	// UpdateDevice обновляет токен устройства у пользователя
+	UpdateDevice(userID uuid.UUID,
+		deviceToken string, deviceType string) error
+
 	// SaveImage вызывает FileService для сохранения изображения в
 	// хранилище, сохраняет ссылку на него в профиле пользователя в БД
 	SaveImage(userID uuid.UUID,
@@ -175,13 +179,11 @@ type PushService interface {
 
 	// SendItemNotification отправляет пользователю
 	// Push-уведомление о конкретном товаре от члена семьи
-	SendItemNotification(ctx context.Context, userID uuid.UUID,
-		itemID uuid.UUID, listID uuid.UUID,
-		familyID uuid.UUID, message string) error
+	SendItemNotification(ctx context.Context,
+		itemNotification notifications.ItemNotification) error
 
 	// SendItemReminder отправляет пользователю
 	// Push-уведомление с напоминанием о конкретном товаре
-	SendItemReminder(ctx context.Context, userID uuid.UUID,
-		itemID uuid.UUID, listID uuid.UUID,
-		familyID *uuid.UUID) error
+	SendItemReminder(ctx context.Context,
+		itemReminder notifications.ItemReminder) error
 }
