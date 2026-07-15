@@ -8,6 +8,7 @@ import (
 	"pora/internal/config"
 	"pora/internal/handlers"
 	"pora/internal/infrastructure/database"
+	"pora/internal/infrastructure/firebase"
 	"pora/internal/infrastructure/logger"
 	"pora/internal/infrastructure/storage"
 	"pora/internal/middleware"
@@ -62,11 +63,23 @@ func main() {
 	)
 	defer stop()
 
-	// Подключение хранилища
-	storage := storage.NewLocalStorage(os.Getenv("BASE_PATH"))
+	// Остановка приложения после завершения контекста
+	go func() {
+		<-ctx.Done()
+		stop()
+	}()
 
 	// Загрузка конфигураций
 	cfg := config.Load()
+
+	// Подключение хранилища
+	storage := storage.NewLocalStorage(os.Getenv("BASE_PATH"))
+
+	// Создание клиента для отправки Push-уведомлений через Firebase
+	firebaseClient, err := firebase.NewClient(ctx, cfg.FireBase)
+	if err != nil {
+		logger.Log.Fatal("Ошибка при создании клиента для Firebase: ", err)
+	}
 
 	// Создание менеджера соединений для Websocket
 	hub := websocket.NewHub()
@@ -79,16 +92,18 @@ func main() {
 	memberRepo := repositories.NewMemberRepository(db)
 	listRepo := repositories.NewListRepository(db)
 	itemRepo := repositories.NewItemRepository(db)
+	deviceRepo := repositories.NewDeviceRepo(db)
 
 	// Подключение сервисов
 	tokenService := services.NewTokenService(userRepo, refreshTokenRepo)
 	fileService := services.NewFileService(storage)
+	pushService := services.NewPushService(deviceRepo, firebaseClient, cfg.Push)
 	authService := services.NewAuthService(userRepo, refreshTokenRepo, tokenService)
 	otpService := services.NewOTPService(otpRepo, userRepo, tokenService)
 	listService := services.NewListService(userRepo, memberRepo, familyRepo, listRepo, itemRepo, hub, cfg.Item)
 	userService := services.NewUserService(userRepo, fileService, listService)
 	familyService := services.NewFamilyService(userRepo, memberRepo, familyRepo, listService, cfg.DeepLink)
-	itemService := services.NewItemService(familyRepo, listRepo, itemRepo, listService, cfg.Item)
+	itemService := services.NewItemService(familyRepo, listRepo, itemRepo, listService, pushService, cfg.Item)
 
 	// Подключение хэндлеров
 	authHandler := handlers.NewAuthHandler(authService, tokenService)

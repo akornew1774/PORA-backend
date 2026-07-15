@@ -2,7 +2,9 @@
 package ports
 
 import (
+	"context"
 	"io"
+	"pora/internal/dto/notifications"
 	"pora/internal/dto/requests"
 	"pora/internal/dto/responses"
 	"pora/internal/entities"
@@ -151,15 +153,35 @@ type ItemService interface {
 
 	// NotifyMembers уведомляет указанных членов семьи об
 	// определенном продукте. К уведомлению можно прикрепить сообщение
-	NotifyMembers(userID uuid.UUID, itemID uuid.UUID,
-		req requests.NotifyMembersRequest) error
+	NotifyMembers(ctx context.Context, userID uuid.UUID,
+		itemID uuid.UUID, req requests.NotifyMembersRequest) error
 
 	// ProcessReminders находит товары, о которых нужно уведомить
 	// пользователя, и вызывает методы для отправки уведомлений
-	ProcessReminders() error
+	ProcessReminders(ctx context.Context) error
 
 	// ProcessCheckedItems находит товары, для которых
 	// необходимо убрать значение true в поле Checked /
 	// удалить товар (если нет значения RemindEveryDays)
-	ProcessCheckedItems() error
+	ProcessCheckedItems(ctx context.Context) error
+}
+
+// PushService содержит порты для методов для
+// отправки Push-уведомлений пользователям
+type PushService interface {
+	// SendToUser отправляет Push-уведомление указанному пользователю
+	SendToUser(ctx context.Context, userID uuid.UUID,
+		notification notifications.Notification) error
+
+	// SendItemNotification отправляет пользователю
+	// Push-уведомление о конкретном товаре от члена семьи
+	SendItemNotification(ctx context.Context, userID uuid.UUID,
+		itemID uuid.UUID, listID uuid.UUID,
+		familyID uuid.UUID, message string) error
+
+	// SendItemReminder отправляет пользователю
+	// Push-уведомление с напоминанием о конкретном товаре
+	SendItemReminder(ctx context.Context, userID uuid.UUID,
+		itemID uuid.UUID, listID uuid.UUID,
+		familyID *uuid.UUID) error
 }

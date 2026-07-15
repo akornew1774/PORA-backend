@@ -140,6 +140,8 @@ func (h *ItemHandler) NotifyMembers(c *gin.Context) {
 
 	var req requests.NotifyMembersRequest
 
+	ctx := c.Request.Context()
+
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		logger.Log.Warn("Ошибка при десериализации запроса: ", err)
@@ -165,7 +167,7 @@ func (h *ItemHandler) NotifyMembers(c *gin.Context) {
 		return
 	}
 
-	err = h.itemService.NotifyMembers(userID, itemID, req)
+	err = h.itemService.NotifyMembers(ctx, userID, itemID, req)
 
 	if err != nil {
 		c.Error(err)

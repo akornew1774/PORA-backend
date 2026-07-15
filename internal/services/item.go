@@ -2,6 +2,7 @@
 package services
 
 import (
+	"context"
 	"pora/internal/config"
 	"pora/internal/dto/requests"
 	"pora/internal/dto/responses"
@@ -17,11 +18,14 @@ import (
 // ItemService - объект, содержащий методы для
 // работы с товарами в списках покупок
 type ItemService struct {
-	familyRepo  ports.FamilyRepository
-	listRepo    ports.ListRepository
-	itemRepo    ports.ItemRepository
+	familyRepo ports.FamilyRepository
+	listRepo   ports.ListRepository
+	itemRepo   ports.ItemRepository
+
 	listService ports.ListService
-	itemConfig  config.ItemConfig
+	pushService ports.PushService
+
+	itemConfig config.ItemConfig
 }
 
 // NewItemService создает и возвращает новый объект ItemService
@@ -29,12 +33,14 @@ func NewItemService(familyRepo ports.FamilyRepository,
 	listRepo ports.ListRepository,
 	itemRepo ports.ItemRepository,
 	listService ports.ListService,
+	pushService ports.PushService,
 	itemConfig config.ItemConfig) ports.ItemService {
 	return &ItemService{
 		familyRepo:  familyRepo,
 		listRepo:    listRepo,
 		itemRepo:    itemRepo,
 		listService: listService,
+		pushService: pushService,
 		itemConfig:  itemConfig,
 	}
 }
@@ -104,7 +110,7 @@ func (s *ItemService) ChangeItem(itemID uuid.UUID,
 	item.RemindEveryDays = req.RemindEveryDays
 
 	if item.Checked == true {
-		checkedAt := time.Now()
+		checkedAt := time.Now().UTC()
 		item.CheckedAt = &checkedAt
 	}
 
@@ -121,7 +127,7 @@ func (s *ItemService) ChangeItem(itemID uuid.UUID,
 			return err
 		}
 
-		nextDate := time.Now().AddDate(0, 0, *item.RemindEveryDays)
+		nextDate := time.Now().UTC().AddDate(0, 0, *item.RemindEveryDays)
 
 		nextReminder := time.Date(
 			nextDate.Year(),
@@ -264,7 +270,7 @@ func (s *ItemService) MarkAsBought(itemID uuid.UUID) error {
 	item.Checked = true
 	item.UpdatedAt = time.Now().UTC()
 
-	checkedAt := time.Now()
+	checkedAt := time.Now().UTC()
 	item.CheckedAt = &checkedAt
 
 	err = s.itemRepo.UpdateItem(item)
@@ -316,7 +322,7 @@ func (s *ItemService) MarkAsBought(itemID uuid.UUID) error {
 
 // NotifyMembers уведомляет указанных членов семьи об
 // определенном продукте. К уведомлению можно прикрепить сообщение
-func (s *ItemService) NotifyMembers(userID uuid.UUID,
+func (s *ItemService) NotifyMembers(ctx context.Context, userID uuid.UUID,
 	itemID uuid.UUID, req requests.NotifyMembersRequest) error {
 
 	item, err := s.itemRepo.FindByID(itemID)
@@ -372,8 +378,18 @@ func (s *ItemService) NotifyMembers(userID uuid.UUID,
 
 		if len(req.To) == 0 || slices.Contains(req.To, user.ID) {
 
-			// TODO: сделать уведомление членов семьи
-
+			err := s.pushService.SendItemNotification(
+				ctx,
+				userID,
+				itemID,
+				list.ID,
+				family.ID,
+				req.Message,
+			)
+			if err != nil {
+				logger.Log.Warn("Ошибка при отправке Push-уведомления", err)
+				continue
+			}
 		}
 	}
 
@@ -382,9 +398,9 @@ func (s *ItemService) NotifyMembers(userID uuid.UUID,
 
 // ProcessReminders находит товары, о которых нужно уведомить
 // пользователя, и вызывает методы для отправки уведомлений
-func (s *ItemService) ProcessReminders() error {
+func (s *ItemService) ProcessReminders(ctx context.Context) error {
 
-	items, err := s.itemRepo.FindItemsToRemind(time.Now())
+	items, err := s.itemRepo.FindItemsToRemind(time.Now().UTC())
 	if err != nil {
 		logger.Log.Error("Ошибка при поиске товаров для уведомления: ", err)
 		return err
@@ -392,32 +408,95 @@ func (s *ItemService) ProcessReminders() error {
 
 	for _, item := range items {
 
-		// TODO: Отправка уведомления пользователю
+		list, err := s.listRepo.FindByID(item.ListID)
+		if err != nil {
+			logger.Log.Error("Ошибка при поиске списка по ID: ", err)
+			return err
+		}
+
+		if list == nil {
+			logger.Log.Warn("Указанный список не найден")
+			return errors.ErrorListNotFound
+		}
+
+		s.remindFamilyMembers(
+			ctx,
+			list.UserID,
+			list.FamilyID,
+			item.ListID,
+			item.ID,
+		)
 
 		nextReminder := item.NextReminderAt.AddDate(0, 0, *item.RemindEveryDays)
 
-		for !nextReminder.After(time.Now()) {
+		for !nextReminder.After(time.Now().UTC()) {
 			nextReminder = nextReminder.AddDate(0, 0, *item.RemindEveryDays)
 		}
 
 		item.NextReminderAt = &nextReminder
 
-		err := s.itemRepo.UpdateItem(&item)
+		err = s.itemRepo.UpdateItem(&item)
 		if err != nil {
 			logger.Log.Error("Ошибка при обновлении товара: ", err)
 		}
 	}
 
+	logger.Log.Info("Напоминание о товарах выполнено")
 	return nil
+}
+
+// remindFamilyMembers вызывает метод PushService для
+// отправки напоминаний о товаре всем членам семьи
+func (s *ItemService) remindFamilyMembers(ctx context.Context, userID *uuid.UUID,
+	familyID *uuid.UUID, listID uuid.UUID, itemID uuid.UUID) {
+
+	if familyID == nil || *familyID == uuid.Nil {
+
+		err := s.pushService.SendItemReminder(
+			ctx,
+			*userID,
+			itemID,
+			listID,
+			nil,
+		)
+
+		if err != nil {
+			logger.Log.Warn("Ошибка при отправке Push-уведомления: ", err)
+		}
+	}
+
+	family, err := s.familyRepo.FindWithMembers(*familyID)
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске семьи: ", err)
+	}
+
+	if family == nil {
+		logger.Log.Warn("Указанная семья не найдена")
+	}
+
+	for _, member := range family.Members {
+
+		err := s.pushService.SendItemReminder(
+			ctx,
+			member.UserID,
+			itemID,
+			listID,
+			familyID,
+		)
+
+		if err != nil {
+			logger.Log.Warn("Ошибка при отправке Push-уведомления: ", err)
+		}
+	}
 }
 
 // ProcessCheckedItems находит товары, для которых
 // необходимо убрать значение true в поле Checked /
 // удалить товар (если нет значения RemindEveryDays)
-func (s *ItemService) ProcessCheckedItems() error {
+func (s *ItemService) ProcessCheckedItems(ctx context.Context) error {
 
 	intervalHours := s.itemConfig.UncheckIntervalHours
-	intervalAgo := time.Now().Add(-time.Duration(intervalHours) * time.Hour)
+	intervalAgo := time.Now().UTC().Add(-time.Duration(intervalHours) * time.Hour)
 
 	items, err := s.itemRepo.FindItemsToUncheck(intervalAgo)
 	if err != nil {
@@ -447,5 +526,6 @@ func (s *ItemService) ProcessCheckedItems() error {
 		}
 	}
 
+	logger.Log.Info("Обработка купленных товаров выполнена")
 	return nil
 }

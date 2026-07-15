@@ -4,6 +4,7 @@ package services
 import (
 	goErrors "errors"
 	"fmt"
+	"os"
 	"pora/internal/config"
 	"pora/internal/dto/responses"
 	"pora/internal/entities"
@@ -78,7 +79,7 @@ func (s *FamilyService) GetFamilies(userID uuid.UUID) (
 	return response, nil
 }
 
-// findMembers приводит всех членов семьи к нужному для response формату
+// convertMembers приводит всех членов семьи к нужному для response формату
 func (s *FamilyService) convertMembers(family *entities.Family) (
 	responses.FamilyMemberInfo, []responses.FamilyMemberInfo, error) {
 
@@ -99,7 +100,7 @@ func (s *FamilyService) convertMembers(family *entities.Family) (
 				ID:       user.ID,
 				Name:     user.Name,
 				Surname:  user.Surname,
-				ImageURL: user.ImageURL,
+				ImageURL: os.Getenv("BASE_URL") + user.ImageURL,
 			},
 			JoinedAt: member.JoinedAt,
 			Color:    string(member.Color),

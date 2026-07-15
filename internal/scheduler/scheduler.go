@@ -12,12 +12,12 @@ import (
 // переданную в конструкторе функцию
 type Scheduler struct {
 	interval time.Duration
-	job      func() error
+	job      func(ctx context.Context) error
 }
 
 // NewScheduler создает и возвращает новый объект Scheduler
 func NewScheduler(interval time.Duration,
-	job func() error) *Scheduler {
+	job func(ctx context.Context) error) *Scheduler {
 	return &Scheduler{
 		interval: interval,
 		job:      job,
@@ -30,14 +30,14 @@ func (s *Scheduler) Run(ctx context.Context) {
 	ticker := time.NewTicker(s.interval)
 	defer ticker.Stop()
 
-	if err := s.job(); err != nil {
+	if err := s.job(ctx); err != nil {
 		logger.Log.Warn("Ошибка при выполнении задачи: ", err)
 	}
 
 	for {
 		select {
 		case <-ticker.C:
-			if err := s.job(); err != nil {
+			if err := s.job(ctx); err != nil {
 				logger.Log.Warn("Ошибка при выполнении задачи: ", err)
 			}
 

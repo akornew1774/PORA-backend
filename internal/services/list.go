@@ -3,6 +3,7 @@ package services
 
 import (
 	"encoding/json"
+	"os"
 	"pora/internal/config"
 	"pora/internal/dto/requests"
 	"pora/internal/dto/responses"
@@ -168,7 +169,7 @@ func (s *ListService) AddItem(userID uuid.UUID, listID uuid.UUID,
 	}
 
 	if item.Checked == true {
-		checkedAt := time.Now()
+		checkedAt := time.Now().UTC()
 		item.CheckedAt = &checkedAt
 	}
 
@@ -185,7 +186,7 @@ func (s *ListService) AddItem(userID uuid.UUID, listID uuid.UUID,
 			return response, err
 		}
 
-		nextDate := time.Now().AddDate(0, 0, *item.RemindEveryDays)
+		nextDate := time.Now().UTC().AddDate(0, 0, *item.RemindEveryDays)
 
 		nextReminder := time.Date(
 			nextDate.Year(),
@@ -457,7 +458,7 @@ func (s *ListService) СonvertToItemInfo(item *entities.Item,
 			ID:       user.ID,
 			Name:     user.Name,
 			Surname:  user.Surname,
-			ImageURL: user.ImageURL,
+			ImageURL: os.Getenv("BASE_URL") + user.ImageURL,
 		},
 
 		JoinedAt: member.JoinedAt,

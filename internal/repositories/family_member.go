@@ -27,13 +27,13 @@ func (r *MemberRepo) FindByUserAndFamily(userID uuid.UUID,
 
 	var member entities.FamilyMember
 
-	err := r.db.First(&member, entities.FamilyMember{
-		UserID:   userID,
-		FamilyID: familyID,
-	}).
+	err := r.db.
 		Preload("User").
 		Preload("Family").
-		Error
+		First(&member, entities.FamilyMember{
+			UserID:   userID,
+			FamilyID: familyID,
+		}).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
