@@ -147,3 +147,16 @@ type ItemRepository interface {
 	// DeleteItem удаляет существующий объект товара в БД
 	DeleteItem(item *entities.Item) error
 }
+
+// DeviceRepository содержит порты для
+// взаимодействия с устройствами пользователей в БД
+type DeviceRepository interface {
+	// FindByUserID находит устройство пользователя по ID пользователя
+	FindByUserID(userID uuid.UUID) (*entities.Device, error)
+
+	// CreateDevice создает новый объект устройства в БД
+	CreateDevice(device *entities.Device) error
+
+	// DeleteDevice удаляет существующий объект устройства в БД
+	DeleteDevice(device *entities.Device) error
+}

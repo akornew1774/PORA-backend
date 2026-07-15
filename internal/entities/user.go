@@ -34,6 +34,7 @@ type User struct {
 	ImageURL string
 
 	RefreshToken *RefreshToken `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	Device       *Device       `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 
 	CreatedFamilies []Family       `gorm:"foreignKey:OwnerID;constraint:OnDelete:CASCADE"`
 	Memberships     []FamilyMember `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
