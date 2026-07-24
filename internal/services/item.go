@@ -257,7 +257,7 @@ func (s *ItemService) DeleteItem(itemID uuid.UUID) error {
 }
 
 // MarkAsBought ставит значение true в поле Checked у товара
-func (s *ItemService) MarkAsBought(itemID uuid.UUID) error {
+func (s *ItemService) MarkAsBought(itemID uuid.UUID, checked bool) error {
 
 	item, err := s.itemRepo.FindByID(itemID)
 	if err != nil {
@@ -270,11 +270,13 @@ func (s *ItemService) MarkAsBought(itemID uuid.UUID) error {
 		return errors.ErrorItemNotFound
 	}
 
-	item.Checked = true
+	item.Checked = checked
 	item.UpdatedAt = time.Now().UTC()
 
-	checkedAt := time.Now().UTC()
-	item.CheckedAt = &checkedAt
+	if checked {
+		checkedAt := time.Now().UTC()
+		item.CheckedAt = &checkedAt
+	}
 
 	err = s.itemRepo.UpdateItem(item)
 	if err != nil {
@@ -435,7 +437,7 @@ func (s *ItemService) NotifyMembers(ctx context.Context, authorID uuid.UUID,
 
 			err := s.pushService.SendItemNotification(ctx, itemNotification)
 			if err != nil {
-				logger.Log.Warn("Ошибка при отправке Push-уведомления", err)
+				logger.Log.Warn("Ошибка при отправке Push-уведомления: ", err)
 				continue
 			}
 		}

@@ -4,7 +4,7 @@ package firebase
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"pora/internal/config"
 	"pora/internal/infrastructure/logger"
 	"strings"
@@ -21,11 +21,22 @@ type Client struct {
 	messagingClient *messaging.Client
 }
 
+// credentials описывает JSON с учетными данными Firebase.
+type credentials struct {
+	Type        string `json:"type"`
+	ProjectID   string `json:"project_id"`
+	PrivateKey  string `json:"private_key"`
+	ClientEmail string `json:"client_email"`
+}
+
 // NewClient создает и возвращает новый Client
 func NewClient(ctx context.Context,
 	cfg config.FirebaseConfig) (*Client, error) {
 
-	credentialsJSON := createCredentialsJSON(cfg)
+	credentialsJSON, err := createCredentialsJSON(cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	app, err := firebase.NewApp(
 		ctx,
@@ -65,8 +76,10 @@ func (c *Client) Send(ctx context.Context,
 	return id, nil
 }
 
-// createCredentialsJSON cоздает JSON с учетными данными для Firebase
-func createCredentialsJSON(cfg config.FirebaseConfig) []byte {
+// createCredentialsJSON создает JSON с учетными данными Firebase.
+func createCredentialsJSON(
+	cfg config.FirebaseConfig,
+) ([]byte, error) {
 
 	privateKey := strings.ReplaceAll(
 		cfg.PrivateKey,
@@ -74,17 +87,12 @@ func createCredentialsJSON(cfg config.FirebaseConfig) []byte {
 		"\n",
 	)
 
-	credentialsJSON := fmt.Sprintf(
-		`{
-			"type": "service_account",
-			"project_id": "%s",
-			"private_key": "%s",
-			"client_email": "%s"
-		}`,
-		cfg.ProjectID,
-		privateKey,
-		cfg.ClientEmail,
-	)
+	cred := credentials{
+		Type:        "service_account",
+		ProjectID:   cfg.ProjectID,
+		PrivateKey:  privateKey,
+		ClientEmail: cfg.ClientEmail,
+	}
 
-	return []byte(credentialsJSON)
+	return json.Marshal(cred)
 }

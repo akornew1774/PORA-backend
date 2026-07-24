@@ -92,7 +92,8 @@ func main() {
 	memberRepo := repositories.NewMemberRepository(db)
 	listRepo := repositories.NewListRepository(db)
 	itemRepo := repositories.NewItemRepository(db)
-	deviceRepo := repositories.NewDeviceRepo(db)
+	deviceRepo := repositories.NewDeviceRepository(db)
+	briefItemRepo := repositories.NewBriefItemRepository(db)
 
 	// Подключение сервисов
 	tokenService := services.NewTokenService(userRepo, refreshTokenRepo)
@@ -101,9 +102,10 @@ func main() {
 	authService := services.NewAuthService(userRepo, refreshTokenRepo, tokenService)
 	otpService := services.NewOTPService(otpRepo, userRepo, deviceRepo, tokenService)
 	listService := services.NewListService(userRepo, memberRepo, familyRepo, listRepo, itemRepo, hub, cfg.Item)
-	userService := services.NewUserService(userRepo, fileService, listService)
+	userService := services.NewUserService(userRepo, deviceRepo, fileService, listService)
 	familyService := services.NewFamilyService(userRepo, memberRepo, familyRepo, listService, cfg.DeepLink)
 	itemService := services.NewItemService(familyRepo, listRepo, itemRepo, listService, pushService, cfg.Item)
+	statisticsService := services.NewStatisticsService(userRepo, briefItemRepo)
 
 	// Подключение хэндлеров
 	authHandler := handlers.NewAuthHandler(authService, tokenService)
@@ -112,6 +114,7 @@ func main() {
 	familyHandler := handlers.NewFamilyHandler(familyService, tokenService)
 	listHandler := handlers.NewListHandler(listService, tokenService)
 	itemHandler := handlers.NewItemHandler(itemService, tokenService)
+	statisticsHandler := handlers.NewStatisticsHandler(statisticsService, tokenService)
 	appLinkHandler := handlers.NewAppLinkHandler(cfg.Android, cfg.DeepLink)
 	wsHandler := handlers.NewWSHandler(hub, tokenService)
 
@@ -171,6 +174,13 @@ func main() {
 
 		items.PATCH("/:item_id/bought", itemHandler.MarkAsBought)
 		items.POST("/:item_id/notify", itemHandler.NotifyMembers)
+	}
+
+	statistics := user.Group("/statistics")
+	{
+		statistics.GET("/products", statisticsHandler.GetUserProducts)
+		statistics.GET("/get_brief", statisticsHandler.GetBrief)
+		statistics.POST("/brief", statisticsHandler.SaveBrief)
 	}
 
 	// Маршрут для создания Websocket-соединения

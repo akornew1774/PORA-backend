@@ -75,6 +75,24 @@ func (r *UserRepo) FindWithFamilies(userID uuid.UUID) (*entities.User, error) {
 	return &user, nil
 }
 
+// FindWithItems находит пользователя на ID вместе с добавленными им товарами
+func (r *UserRepo) FindWithItems(userID uuid.UUID) (*entities.User, error) {
+	var user entities.User
+
+	err := r.db.
+		Preload("AddedItems").
+		First(&user, userID).
+		Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 // FindByPhone находит пользователя по номеру телефона
 func (r *UserRepo) FindByPhone(phone string) (*entities.User, error) {
 	var user entities.User

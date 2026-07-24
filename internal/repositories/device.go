@@ -17,7 +17,7 @@ type DeviceRepo struct {
 }
 
 // NewDeviceRepo создает и возвращает новый объект DeviceRepo
-func NewDeviceRepo(db *gorm.DB) ports.DeviceRepository {
+func NewDeviceRepository(db *gorm.DB) ports.DeviceRepository {
 	return &DeviceRepo{db: db}
 }
 

@@ -40,6 +40,9 @@ type User struct {
 	Memberships     []FamilyMember `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	Lists           []List         `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 
+	AddedItems []Item      `gorm:"foreignKey:AddedByID;constraint:OnDelete:CASCADE"`
+	BriefItems []BriefItem `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+
 	CreatedAt time.Time `gorm:"not null"`
 	UpdatedAt time.Time `gorm:"not null"`
 }

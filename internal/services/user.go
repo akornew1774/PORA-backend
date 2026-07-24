@@ -25,10 +25,12 @@ type UserService struct {
 
 // NewUserService создает и возвращает новый объект UserService
 func NewUserService(userRepo ports.UserRepository,
+	deviceRepo ports.DeviceRepository,
 	fileService ports.FileService,
 	listService ports.ListService) ports.UserService {
 	return &UserService{
 		userRepo:    userRepo,
+		deviceRepo:  deviceRepo,
 		fileService: fileService,
 		listService: listService,
 	}

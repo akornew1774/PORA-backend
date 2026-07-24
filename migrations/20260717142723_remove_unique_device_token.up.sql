@@ -1,0 +1,2 @@
+ALTER TABLE devices
+DROP CONSTRAINT devices_device_token_key;

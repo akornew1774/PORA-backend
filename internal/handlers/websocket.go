@@ -26,6 +26,7 @@ func NewWSHandler(hub ports.Hub,
 	}
 }
 
+// Connect устанавливает WebSocket-соединение
 func (h *WSHandler) Connect(c *gin.Context) {
 
 	accessToken := c.GetHeader("Authorization")

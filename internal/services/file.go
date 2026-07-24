@@ -58,7 +58,7 @@ func (s *FileService) SaveProfileImage(file io.Reader,
 
 // isValidExtension проверяет, является ли расширение валидным
 func (s *FileService) isValidExtension(ext string) bool {
-	validExtensions := []string{".pdf", ".png", ".jpg", ".jpeg", ".gif"}
+	validExtensions := []string{".pdf", ".png", ".jpg", ".jpeg", ".gif", ".webp"}
 	ext = strings.ToLower(ext)
 
 	return slices.Contains(validExtensions, ext)

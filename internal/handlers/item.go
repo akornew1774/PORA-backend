@@ -113,6 +113,14 @@ func (h *ItemHandler) DeleteItem(c *gin.Context) {
 // MarkAsBought обрабатывает запрос для отметки
 // определенного товара как купленного
 func (h *ItemHandler) MarkAsBought(c *gin.Context) {
+	var req requests.MarkAsBoughtRequest
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		logger.Log.Warn("Ошибка при десериализации запроса: ", err)
+		c.Error(errors.ErrorInvalidInput)
+		return
+	}
 
 	rawItemID := c.Param("item_id")
 
@@ -123,7 +131,7 @@ func (h *ItemHandler) MarkAsBought(c *gin.Context) {
 		return
 	}
 
-	err = h.itemService.MarkAsBought(itemID)
+	err = h.itemService.MarkAsBought(itemID, req.Checked)
 
 	if err != nil {
 		c.Error(err)

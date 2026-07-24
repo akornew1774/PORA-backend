@@ -153,7 +153,7 @@ type ItemService interface {
 	DeleteItem(itemID uuid.UUID) error
 
 	// MarkAsBought ставит значение true в поле Checked у товара
-	MarkAsBought(itemID uuid.UUID) error
+	MarkAsBought(itemID uuid.UUID, checked bool) error
 
 	// NotifyMembers уведомляет указанных членов семьи об
 	// определенном продукте. К уведомлению можно прикрепить сообщение
@@ -186,4 +186,20 @@ type PushService interface {
 	// Push-уведомление с напоминанием о конкретном товаре
 	SendItemReminder(ctx context.Context,
 		itemReminder notifications.ItemReminder) error
+}
+
+// StatisticsService содержит порты для методов
+// для предоставления пользователям статистики
+type StatisticsService interface {
+	// GetUserProducts получает все созданные пользователем товары
+	GetUserProducts(userID uuid.UUID) (
+		responses.GetUserProductsResponse, error)
+
+	// GetBrief получает все быстро кончающиеся товары пользователя
+	GetBrief(userID uuid.UUID) (
+		responses.GetBriefResponse, error)
+
+	// SaveBrief сохраняет быстро кончающиеся товары пользователя
+	SaveBrief(userID uuid.UUID,
+		req requests.SaveBriefRequest) error
 }

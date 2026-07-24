@@ -5,7 +5,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// ChangeItemRequest - структура дял запроса на
+// ChangeItemRequest - структура для запроса на
 // изменение товара в списке покупок
 type ChangeItemRequest struct {
 	Name    string `json:"name" binding:"required"`
@@ -19,6 +19,12 @@ type ChangeItemRequest struct {
 
 	Checked         bool `json:"checked"`
 	RemindEveryDays *int `json:"remind-every-days"`
+}
+
+// MarkAsBoughtRequest - структура для запроса на
+// отметку товара как купленного
+type MarkAsBoughtRequest struct {
+	Checked bool `json:"checked"`
 }
 
 // NotifyMembersRequest - структура для уведомления

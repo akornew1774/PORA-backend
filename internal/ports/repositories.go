@@ -19,6 +19,9 @@ type UserRepository interface {
 	// FindWithFamilies находит пользователя на ID вместе с его семьями
 	FindWithFamilies(userID uuid.UUID) (*entities.User, error)
 
+	// FindWithItems находит пользователя на ID вместе с добавленными им товарами
+	FindWithItems(userID uuid.UUID) (*entities.User, error)
+
 	// FindByPhone находит пользователя по номеру телефона
 	FindByPhone(phone string) (*entities.User, error)
 
@@ -162,4 +165,19 @@ type DeviceRepository interface {
 
 	// DeleteDevice удаляет существующий объект устройства в БД
 	DeleteDevice(device *entities.Device) error
+}
+
+// BriefItemRepository содержит порты для
+// взаимодействия с кратким описанием товара в БД
+type BriefItemRepository interface {
+	// FindByUserID удаляет все объекты BriefItem,
+	// привязанные к определенному пользователю
+	FindByUserID(userID uuid.UUID) ([]entities.BriefItem, error)
+
+	// CreateBriefItem создает новый объект BriefItem в БД
+	CreateBriefItem(briefItem *entities.BriefItem) error
+
+	// DeleteByUserID удаляет все объекты BriefItem,
+	// привязанные к определенному пользователю
+	DeleteByUserID(userID uuid.UUID) error
 }
