@@ -8,6 +8,7 @@ import (
 	"pora/internal/errors"
 	"pora/internal/infrastructure/logger"
 	"pora/internal/ports"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -17,14 +18,17 @@ import (
 type StatisticsService struct {
 	userRepo      ports.UserRepository
 	briefItemRepo ports.BriefItemRepository
+	userLoginRepo ports.UserLoginRepository
 }
 
 // NewStatisticsService создает и возвращает новый объект StatisticsService
 func NewStatisticsService(userRepo ports.UserRepository,
-	briefItemRepo ports.BriefItemRepository) ports.StatisticsService {
+	briefItemRepo ports.BriefItemRepository,
+	userLoginRepo ports.UserLoginRepository) ports.StatisticsService {
 	return &StatisticsService{
 		userRepo:      userRepo,
 		briefItemRepo: briefItemRepo,
+		userLoginRepo: userLoginRepo,
 	}
 }
 
@@ -87,7 +91,7 @@ func (s *StatisticsService) GetBrief(userID uuid.UUID) (
 
 		briefItemInfo := responses.BriefInfo{
 			Title:   briefItem.Title,
-			Leadind: briefItem.Leading,
+			Leadind: briefItem.Subtitle,
 		}
 
 		response.BriefItems = append(response.BriefItems, briefItemInfo)
@@ -115,9 +119,9 @@ func (s *StatisticsService) SaveBrief(userID uuid.UUID,
 		}
 
 		briefItem := &entities.BriefItem{
-			UserID:  userID,
-			Title:   briefItemInfo.Title,
-			Leading: briefItemInfo.Leadind,
+			UserID:   userID,
+			Title:    briefItemInfo.Title,
+			Subtitle: briefItemInfo.Leadind,
 		}
 
 		err := s.briefItemRepo.CreateBriefItem(briefItem)
@@ -130,4 +134,33 @@ func (s *StatisticsService) SaveBrief(userID uuid.UUID,
 	}
 
 	return nil
+}
+
+// GetLoginTimes получает все время входа пользователя в приложение
+func (s *StatisticsService) GetLoginTimes(userID uuid.UUID) (
+	responses.LoginTimesResponse, error) {
+
+	var response responses.LoginTimesResponse
+	var loginTimes []time.Time
+
+	weekAgo := time.Now().UTC().Add(-7 * 24 * time.Hour)
+
+	err := s.userLoginRepo.DeleteOldLogins(weekAgo)
+	if err != nil {
+		logger.Log.Error("Ошибка при удалении старых записей о входе: ", err)
+		return response, err
+	}
+
+	logins, err := s.userLoginRepo.FindRecentByUserID(userID, weekAgo)
+	if err != nil {
+		logger.Log.Error("Ошибка при получении записей о входе: ", err)
+		return response, err
+	}
+
+	for _, login := range logins {
+		loginTimes = append(loginTimes, login.CreatedAt)
+	}
+
+	response.LoginTimes = loginTimes
+	return response, err
 }

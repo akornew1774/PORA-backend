@@ -16,16 +16,19 @@ import (
 type AuthService struct {
 	userRepo         ports.UserRepository
 	refreshTokenRepo ports.RefreshTokenRepository
+	userLoginRepo    ports.UserLoginRepository
 	TokenService     ports.TokenService
 }
 
 // NewAuthService создает и возвращает новый объект AuthService
 func NewAuthService(userRepo ports.UserRepository,
 	refreshTokenRepo ports.RefreshTokenRepository,
+	userLoginRepo ports.UserLoginRepository,
 	TokenService ports.TokenService) ports.AuthService {
 	return &AuthService{
 		userRepo:         userRepo,
 		refreshTokenRepo: refreshTokenRepo,
+		userLoginRepo:    userLoginRepo,
 		TokenService:     TokenService,
 	}
 }
@@ -108,6 +111,16 @@ func (s *AuthService) GetNewTokens(
 	accessToken, refreshTokenStr, err := s.TokenService.CreateTokens(user)
 	if err != nil {
 		logger.Log.Error("Ошибка при обновлении токенов пользователя: ", err)
+		return responses.RefreshResponse{}, err
+	}
+
+	login := &entities.UserLogin{
+		UserID: user.ID,
+	}
+
+	err = s.userLoginRepo.CreateUserLogin(login)
+	if err != nil {
+		logger.Log.Error("Ошибка при сохранении времени входа пользователя: ", err)
 		return responses.RefreshResponse{}, err
 	}
 

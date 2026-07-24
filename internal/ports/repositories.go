@@ -184,4 +184,15 @@ type BriefItemRepository interface {
 
 // UserLoginRepository содержит порты для взаимодействия
 // со временем входа пользователя в приложение
-type UserLoginRepository interface{}
+type UserLoginRepository interface {
+	// FindRecentByUserID находит все недавние входы пользователя в приложение
+	FindRecentByUserID(userID uuid.UUID,
+		since time.Time) ([]entities.UserLogin, error)
+
+	// CreateUserLogin создает новую сущность входа пользователя в приложение
+	CreateUserLogin(login *entities.UserLogin) error
+
+	// DeleteOldLogins удаляет все UserLogins,
+	// которые были созданы раньше граничного времени
+	DeleteOldLogins(cutoffTime time.Time) error
+}

@@ -109,3 +109,27 @@ func (h *StatisticsHandler) SaveBrief(c *gin.Context) {
 	logger.Log.Info("Сохранение краткой информации о товарах пользователя прошло успешно")
 	c.JSON(http.StatusOK, responses.GenericResponse{})
 }
+
+// GetLoginTimes обрабатывает запрос на получение
+// информации о всех входах пользователя в приложение
+func (h *StatisticsHandler) GetLoginTimes(c *gin.Context) {
+
+	accessToken := c.GetHeader("Authorization")
+
+	userID, err := h.tokenService.DecodeAccessToken(accessToken)
+	if err != nil {
+		logger.Log.Warn("Возникла ошибка при декодировании Access-токена")
+		c.Error(err)
+		return
+	}
+
+	response, err := h.statisticsService.GetLoginTimes(userID)
+
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	logger.Log.Info("Получение сведений о входах пользователя прощло успешно")
+	c.JSON(http.StatusOK, response)
+}

@@ -524,6 +524,8 @@ func (s *ItemService) remindFamilyMembers(ctx context.Context,
 		if err != nil {
 			logger.Log.Warn("Ошибка при отправке Push-уведомления: ", err)
 		}
+
+		return
 	}
 
 	family, err := s.familyRepo.FindWithMembers(*familyID)

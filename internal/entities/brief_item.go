@@ -13,8 +13,8 @@ type BriefItem struct {
 	ID     uuid.UUID `gorm:"type:uuid;primaryKey"`
 	UserID uuid.UUID `gorm:"type:uuid;not null"`
 
-	Title   string `gorm:"not null"`
-	Leading *string
+	Title    string `gorm:"not null"`
+	Subtitle *string
 
 	CreatedAt time.Time `gorm:"not null"`
 }

@@ -202,4 +202,8 @@ type StatisticsService interface {
 	// SaveBrief сохраняет быстро кончающиеся товары пользователя
 	SaveBrief(userID uuid.UUID,
 		req requests.SaveBriefRequest) error
+
+	// GetLoginTimes получает все время входа пользователя в приложение
+	GetLoginTimes(userID uuid.UUID) (
+		responses.LoginTimesResponse, error)
 }

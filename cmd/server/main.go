@@ -94,18 +94,19 @@ func main() {
 	itemRepo := repositories.NewItemRepository(db)
 	deviceRepo := repositories.NewDeviceRepository(db)
 	briefItemRepo := repositories.NewBriefItemRepository(db)
+	userLoginRepo := repositories.NewUserLoginRepository(db)
 
 	// Подключение сервисов
 	tokenService := services.NewTokenService(userRepo, refreshTokenRepo)
 	fileService := services.NewFileService(storage)
 	pushService := services.NewPushService(deviceRepo, firebaseClient, cfg.Push)
-	authService := services.NewAuthService(userRepo, refreshTokenRepo, tokenService)
+	authService := services.NewAuthService(userRepo, refreshTokenRepo, userLoginRepo, tokenService)
 	otpService := services.NewOTPService(otpRepo, userRepo, deviceRepo, tokenService)
 	listService := services.NewListService(userRepo, memberRepo, familyRepo, listRepo, itemRepo, hub, cfg.Item)
 	userService := services.NewUserService(userRepo, deviceRepo, fileService, listService)
 	familyService := services.NewFamilyService(userRepo, memberRepo, familyRepo, listService, cfg.DeepLink)
 	itemService := services.NewItemService(familyRepo, listRepo, itemRepo, listService, pushService, cfg.Item)
-	statisticsService := services.NewStatisticsService(userRepo, briefItemRepo)
+	statisticsService := services.NewStatisticsService(userRepo, briefItemRepo, userLoginRepo)
 
 	// Подключение хэндлеров
 	authHandler := handlers.NewAuthHandler(authService, tokenService)
@@ -180,6 +181,8 @@ func main() {
 	statistics := user.Group("/statistics")
 	{
 		statistics.GET("/products", statisticsHandler.GetUserProducts)
+		statistics.GET("/login_times", statisticsHandler.GetLoginTimes)
+
 		statistics.GET("/get_brief", statisticsHandler.GetBrief)
 		statistics.POST("/brief", statisticsHandler.SaveBrief)
 	}

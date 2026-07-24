@@ -41,18 +41,21 @@ func (r *RefreshTokenRepo) FindByToken(
 // CreateRefreshToken создает новый объект токена в БД
 func (r *RefreshTokenRepo) CreateRefreshToken(
 	refreshToken *entities.RefreshToken) error {
+
 	return r.db.Create(refreshToken).Error
 }
 
 // UpdateRefreshToken изменяет данные определенного refresh-токена
 func (r *RefreshTokenRepo) UpdateRefreshToken(
 	refreshToken *entities.RefreshToken) error {
+
 	return r.db.Save(refreshToken).Debug().Error
 }
 
 // DeleteByUserID удаляет все refresh-токены c определенным userID
 func (r *RefreshTokenRepo) DeleteByUserID(
 	userID uuid.UUID) error {
+
 	return r.db.Where("user_id = ?", userID).
 		Delete(&entities.RefreshToken{}).Error
 }

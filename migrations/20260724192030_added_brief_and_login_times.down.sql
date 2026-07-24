@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS brief_items;
+DROP TABLE IF EXISTS user_logins;
