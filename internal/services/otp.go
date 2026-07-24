@@ -6,22 +6,18 @@ import (
 	"pora/internal/dto/responses"
 	"pora/internal/entities"
 	"pora/internal/errors"
+	emailInfrastructure "pora/internal/infrastructure/email"
 	"pora/internal/infrastructure/logger"
+	"pora/internal/infrastructure/notisend"
 	"pora/internal/ports"
 
-	"bytes"
 	"crypto/rand"
-	"encoding/json"
 	"fmt"
 	"math/big"
-	"mime/multipart"
-	"net/http"
-	"os"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/nyaruka/phonenumbers"
-	"gopkg.in/mail.v2"
 )
 
 // OTPService - объект, содержащий методы для отправки и подтверждения Otp
@@ -78,10 +74,10 @@ func (s *OtpService) SendOtp(rawPhone string, email string) error {
 
 		phone = phonenumbers.Format(num, phonenumbers.E164)
 
-		err = s.sendCodeToNumber(phone, code)
+		err = notisend.SendOtp(phone, code)
 
 	} else {
-		err = s.sendCodeToEmail(email, code)
+		err = emailInfrastructure.SendOtp(email, code)
 	}
 
 	if err != nil {
@@ -283,108 +279,4 @@ func (s *OtpService) generateOtp() (string, error) {
 	}
 
 	return fmt.Sprintf("%06d", number.Int64()), nil
-}
-
-// sendCodeToNumber отправляет запрос на отправку OTP на номер телефона
-func (s *OtpService) sendCodeToNumber(phone string, code string) error {
-
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-
-	project := os.Getenv("PROJECT_NAME")
-	apiKey := os.Getenv("NOTISEND_API_KEY")
-	url := os.Getenv("NOTISEND_URL")
-
-	writer.WriteField("project", project)
-	writer.WriteField("recipients", phone)
-	writer.WriteField("message", code)
-	writer.WriteField("apikey", apiKey)
-
-	writer.Close()
-
-	req, err := http.NewRequest(
-		http.MethodGet,
-		url,
-		body,
-	)
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set("Accept", "application/json")
-
-	client := &http.Client{}
-	response, err := client.Do(req)
-	if err != nil {
-		logger.Log.Error("Ошибка при отправке запроса на отправку OTP: ", err)
-		return err
-	}
-	defer response.Body.Close()
-
-	var result responses.NotisendResponse
-
-	err = json.NewDecoder(response.Body).Decode(&result)
-	if err != nil {
-		logger.Log.Error("Ошибка при декодировании ответа: ", err)
-		return err
-	}
-
-	if result.Status != "success" {
-		logger.Log.Error("Не удалость отправить OTP-код, Status: ", result.Status)
-		return errors.ErrorInternal
-	}
-
-	return nil
-}
-
-// sendCodeToEmail отправляет запрос на отправку OTP на электронную почту
-func (s *OtpService) sendCodeToEmail(email string, code string) error {
-
-	message := mail.NewMessage()
-
-	host := os.Getenv("SMTP_HOST")
-	port := 587
-
-	username := os.Getenv("SMTP_USERNAME")
-	password := os.Getenv("SMTP_PASSWORD")
-
-	fromName := os.Getenv("SMTP_FROM_NAME")
-	fromEmail := os.Getenv("SMTP_FROM_EMAIL")
-
-	message.SetHeader(
-		"From",
-		fmt.Sprintf("%s <%s>", fromName, fromEmail),
-	)
-
-	message.SetHeader("To", email)
-
-	message.SetHeader(
-		"Subject",
-		"Код подтверждения",
-	)
-
-	message.SetBody("text/html", fmt.Sprintf(`
-
-		<p>Ваш код подтверждения:</p>
-
-		<h1 style="font-size:32px">%s</h1>
-
-		<p>Никому не сообщайте этот код</p>
-	`, code))
-
-	dialer := mail.NewDialer(
-		host,
-		port,
-		username,
-		password,
-	)
-
-	err := dialer.DialAndSend(message)
-	if err != nil {
-		logger.Log.Error("Ошибка при отправке сообщения по email: ", err)
-		return err
-	}
-
-	return nil
 }

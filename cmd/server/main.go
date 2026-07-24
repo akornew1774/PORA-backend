@@ -115,6 +115,7 @@ func main() {
 	listHandler := handlers.NewListHandler(listService, tokenService)
 	itemHandler := handlers.NewItemHandler(itemService, tokenService)
 	statisticsHandler := handlers.NewStatisticsHandler(statisticsService, tokenService)
+	helpHandler := handlers.NewHelpHandler(tokenService)
 	appLinkHandler := handlers.NewAppLinkHandler(cfg.Android, cfg.DeepLink)
 	wsHandler := handlers.NewWSHandler(hub, tokenService)
 
@@ -181,6 +182,11 @@ func main() {
 		statistics.GET("/products", statisticsHandler.GetUserProducts)
 		statistics.GET("/get_brief", statisticsHandler.GetBrief)
 		statistics.POST("/brief", statisticsHandler.SaveBrief)
+	}
+
+	help := api.Group("/help")
+	{
+		help.POST("/message", helpHandler.HandleHelpMessage)
 	}
 
 	// Маршрут для создания Websocket-соединения

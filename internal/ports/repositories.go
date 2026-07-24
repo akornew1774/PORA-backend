@@ -181,3 +181,7 @@ type BriefItemRepository interface {
 	// привязанные к определенному пользователю
 	DeleteByUserID(userID uuid.UUID) error
 }
+
+// UserLoginRepository содержит порты для взаимодействия
+// со временем входа пользователя в приложение
+type UserLoginRepository interface{}
