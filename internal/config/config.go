@@ -16,6 +16,7 @@ type Config struct {
 	Push     PushConfig
 	DeepLink DeepLinkConfig
 	Android  AndroidConfig
+	Deepseek DeepseekConfig
 }
 
 // ItemConfig - конфигурация с нужными значениями для работы с товарами
@@ -47,6 +48,12 @@ type DeepLinkConfig struct {
 type AndroidConfig struct {
 	PackageName string
 	SHA256      string
+}
+
+// DeepseekConfig - конфигурация для отправки запросов к ИИ через DeepseekApi
+type DeepseekConfig struct {
+	BaseURL string
+	ApiKey  string
 }
 
 // Load загружает всю информацию для конфигураций
@@ -85,6 +92,11 @@ func Load() *Config {
 		Android: AndroidConfig{
 			PackageName: os.Getenv("ANDROID_PACKAGE_NAME"),
 			SHA256:      os.Getenv("ANDROID_SHA256"),
+		},
+
+		Deepseek: DeepseekConfig{
+			BaseURL: os.Getenv("DEEPSEEK_BASE_URL"),
+			ApiKey:  os.Getenv("DEEPSEEK_API_KEY"),
 		},
 	}
 }

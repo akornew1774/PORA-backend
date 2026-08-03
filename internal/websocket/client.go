@@ -12,14 +12,17 @@ import (
 
 // Client описывает одно активное Websocket-соединение
 type Client struct {
+	hub       *Hub
 	conn      *websocket.Conn
 	send      chan []byte
 	closeOnce sync.Once
 }
 
 // NewClient создает и возвращает нового клиента
-func NewClient(conn *websocket.Conn) *Client {
+func NewClient(hub *Hub,
+	conn *websocket.Conn) *Client {
 	return &Client{
+		hub:  hub,
 		conn: conn,
 		send: make(chan []byte, 20),
 	}
@@ -72,6 +75,8 @@ func (c *Client) WritePump() {
 func (c *Client) Close() error {
 
 	var err error
+
+	c.hub.Unregister(c)
 
 	c.closeOnce.Do(func() {
 		close(c.send)

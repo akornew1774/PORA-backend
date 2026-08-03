@@ -52,6 +52,30 @@ func (h *StatisticsHandler) GetUserProducts(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// GetPopularProducts обрабатывает Api запрос
+// на получение информации о популярных продуктах
+func (h *StatisticsHandler) GetPopularProducts(c *gin.Context) {
+
+	accessToken := c.GetHeader("Authorization")
+
+	userID, err := h.tokenService.DecodeAccessToken(accessToken)
+	if err != nil {
+		logger.Log.Warn("Возникла ошибка при декодировании Access-токена")
+		c.Error(err)
+		return
+	}
+
+	response, err := h.statisticsService.GetPopularProducts(userID)
+
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	logger.Log.Info("Получение популярных продуктов прошло успешно")
+	c.JSON(http.StatusOK, response)
+}
+
 // GetBrief обрабатывает запрос на получение информации
 //
 //	о быстро кончающихся продуктах пользователя

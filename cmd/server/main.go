@@ -3,11 +3,14 @@ package main
 
 import (
 	"context"
+	// "net/http"
 	"os"
 	"os/signal"
 	"pora/internal/config"
 	"pora/internal/handlers"
 	"pora/internal/infrastructure/database"
+
+	// "pora/internal/infrastructure/deepseek"
 	"pora/internal/infrastructure/firebase"
 	"pora/internal/infrastructure/logger"
 	"pora/internal/infrastructure/storage"
@@ -72,6 +75,14 @@ func main() {
 	// Загрузка конфигураций
 	cfg := config.Load()
 
+	// Создание HTTP-клиента
+	// httpClient := http.Client{
+	// 	Timeout: time.Minute,
+	// }
+
+	// Создание клиента для запросов к Deepseek
+	// deepseekClient := deepseek.NewClient(cfg.Deepseek, &httpClient)
+
 	// Подключение хранилища
 	storage := storage.NewLocalStorage(os.Getenv("BASE_PATH"))
 
@@ -99,14 +110,14 @@ func main() {
 	// Подключение сервисов
 	tokenService := services.NewTokenService(userRepo, refreshTokenRepo)
 	fileService := services.NewFileService(storage)
-	pushService := services.NewPushService(deviceRepo, firebaseClient, cfg.Push)
+	pushService := services.NewPushService(userRepo, deviceRepo, firebaseClient, cfg.Push)
 	authService := services.NewAuthService(userRepo, refreshTokenRepo, userLoginRepo, tokenService)
 	otpService := services.NewOTPService(otpRepo, userRepo, deviceRepo, tokenService)
 	listService := services.NewListService(userRepo, memberRepo, familyRepo, listRepo, itemRepo, hub, cfg.Item)
 	userService := services.NewUserService(userRepo, deviceRepo, fileService, listService)
 	familyService := services.NewFamilyService(userRepo, memberRepo, familyRepo, listService, cfg.DeepLink)
 	itemService := services.NewItemService(familyRepo, listRepo, itemRepo, listService, pushService, cfg.Item)
-	statisticsService := services.NewStatisticsService(userRepo, briefItemRepo, userLoginRepo)
+	statisticsService := services.NewStatisticsService(userRepo, familyRepo, briefItemRepo, userLoginRepo)
 
 	// Подключение хэндлеров
 	authHandler := handlers.NewAuthHandler(authService, tokenService)
@@ -117,6 +128,7 @@ func main() {
 	itemHandler := handlers.NewItemHandler(itemService, tokenService)
 	statisticsHandler := handlers.NewStatisticsHandler(statisticsService, tokenService)
 	helpHandler := handlers.NewHelpHandler(tokenService)
+	systemHander := handlers.NewSystemHandler(pushService)
 	appLinkHandler := handlers.NewAppLinkHandler(cfg.Android, cfg.DeepLink)
 	wsHandler := handlers.NewWSHandler(hub, tokenService)
 
@@ -164,15 +176,19 @@ func main() {
 	{
 		lists.GET("/:list_id", listHandler.GetListInfo)
 		lists.POST("/create-list", listHandler.CreateList)
-		lists.POST("/:list_id/items", listHandler.AddItem)
 		lists.DELETE("/:list_id", listHandler.DeleteList)
+
+		lists.POST("/:list_id/item", listHandler.AddItem)
+		lists.POST("/:list_id/items", listHandler.AddItems)
 	}
 
 	items := api.Group("/items")
 	{
 		items.GET("/:item_id", itemHandler.GetItemInfo)
 		items.PUT("/:item_id", itemHandler.ChangeItem)
+
 		items.DELETE("/:item_id", itemHandler.DeleteItem)
+		items.DELETE("", itemHandler.DeleteItems)
 
 		items.PATCH("/:item_id/bought", itemHandler.MarkAsBought)
 		items.POST("/:item_id/notify", itemHandler.NotifyMembers)
@@ -181,6 +197,7 @@ func main() {
 	statistics := user.Group("/statistics")
 	{
 		statistics.GET("/products", statisticsHandler.GetUserProducts)
+		statistics.GET("/popular-products", statisticsHandler.GetPopularProducts)
 		statistics.GET("/login_times", statisticsHandler.GetLoginTimes)
 
 		statistics.GET("/get_brief", statisticsHandler.GetBrief)
@@ -190,6 +207,11 @@ func main() {
 	help := api.Group("/help")
 	{
 		help.POST("/message", helpHandler.HandleHelpMessage)
+	}
+
+	system := api.Group("/system")
+	{
+		system.POST("/notify-everyone", systemHander.NotifyEveryone)
 	}
 
 	// Маршрут для создания Websocket-соединения

@@ -100,6 +100,10 @@ func (s *ItemService) ChangeItem(itemID uuid.UUID,
 		return errors.ErrorItemNotFound
 	}
 
+	if !item.Checked && req.Checked {
+		item.TimesBought++
+	}
+
 	item.Name = req.Name
 	item.Section = req.Section
 
@@ -112,7 +116,7 @@ func (s *ItemService) ChangeItem(itemID uuid.UUID,
 	item.Checked = req.Checked
 	item.RemindEveryDays = req.RemindEveryDays
 
-	if item.Checked == true {
+	if item.Checked {
 		checkedAt := time.Now().UTC()
 		item.CheckedAt = &checkedAt
 	}
@@ -195,27 +199,34 @@ func (s *ItemService) ChangeItem(itemID uuid.UUID,
 	return nil
 }
 
-// DeleteItem удаляет один товар из списка продуктов
-func (s *ItemService) DeleteItem(itemID uuid.UUID) error {
+// DeleteItems удаляет товары из списка продуктов
+func (s *ItemService) DeleteItems(itemIDs []uuid.UUID) error {
 
-	item, err := s.itemRepo.FindByID(itemID)
-	if err != nil {
-		logger.Log.Error("Ошибка при поиске товара по ID: ", err)
-		return err
+	var listID uuid.UUID
+
+	for _, itemID := range itemIDs {
+
+		item, err := s.itemRepo.FindByID(itemID)
+		if err != nil {
+			logger.Log.Error("Ошибка при поиске товара по ID: ", err)
+			return err
+		}
+
+		if item == nil {
+			logger.Log.Warn("Товар с указанный ID не найден: ")
+			continue
+		}
+
+		err = s.itemRepo.DeleteItem(item)
+		if err != nil {
+			logger.Log.Error("Ошибюка при удалении товара: ", err)
+			return err
+		}
+
+		listID = item.ListID
 	}
 
-	if item == nil {
-		logger.Log.Warn("Товар с указанный ID не найден: ")
-		return nil
-	}
-
-	err = s.itemRepo.DeleteItem(item)
-	if err != nil {
-		logger.Log.Error("Ошибюка при удалении товара: ", err)
-		return err
-	}
-
-	list, err := s.listRepo.FindByID(item.ListID)
+	list, err := s.listRepo.FindByID(listID)
 	if err != nil {
 		logger.Log.Error("Ошибка при поиске списка по ID: ", err)
 		return err
@@ -276,6 +287,7 @@ func (s *ItemService) MarkAsBought(itemID uuid.UUID, checked bool) error {
 	if checked {
 		checkedAt := time.Now().UTC()
 		item.CheckedAt = &checkedAt
+		item.TimesBought++
 	}
 
 	err = s.itemRepo.UpdateItem(item)

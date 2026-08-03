@@ -99,7 +99,7 @@ func (h *ItemHandler) DeleteItem(c *gin.Context) {
 		return
 	}
 
-	err = h.itemService.DeleteItem(itemID)
+	err = h.itemService.DeleteItems([]uuid.UUID{itemID})
 
 	if err != nil {
 		c.Error(err)
@@ -107,6 +107,30 @@ func (h *ItemHandler) DeleteItem(c *gin.Context) {
 	}
 
 	logger.Log.Info("Удаление товара прошло успешно")
+	c.JSON(http.StatusOK, responses.GenericResponse{})
+}
+
+// DeleteItems обрабатывает запрос на удаленение
+// нескольких товаров из списка покупок
+func (h *ItemHandler) DeleteItems(c *gin.Context) {
+
+	var req requests.DeleteItemsRequest
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		logger.Log.Warn("Ошибка при десериализации запроса: ", err)
+		c.Error(errors.ErrorInvalidInput)
+		return
+	}
+
+	err = h.itemService.DeleteItems(req.ItemIDs)
+
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	logger.Log.Info("Удаление товаров прошло успешно")
 	c.JSON(http.StatusOK, responses.GenericResponse{})
 }
 

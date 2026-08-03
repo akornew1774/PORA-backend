@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -32,6 +33,9 @@ type User struct {
 	Status  UserStatus `gorm:"not null"`
 
 	ImageURL string
+
+	ScrapRecipes          pq.StringArray `gorm:"type:text[]"`
+	BestNotificationTimes pq.StringArray `gorm:"type:text[]"`
 
 	RefreshToken *RefreshToken `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	Device       *Device       `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`

@@ -33,6 +33,8 @@ type Item struct {
 	Priority int `gorm:"default:1"`
 	Urgent   bool
 
+	TimesBought int
+
 	Checked   bool `gorm:"default:false"`
 	CheckedAt *time.Time
 

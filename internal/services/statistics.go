@@ -17,16 +17,19 @@ import (
 // предоставления статистики для пользователей
 type StatisticsService struct {
 	userRepo      ports.UserRepository
+	familyRepo    ports.FamilyRepository
 	briefItemRepo ports.BriefItemRepository
 	userLoginRepo ports.UserLoginRepository
 }
 
 // NewStatisticsService создает и возвращает новый объект StatisticsService
 func NewStatisticsService(userRepo ports.UserRepository,
+	familyRepo ports.FamilyRepository,
 	briefItemRepo ports.BriefItemRepository,
 	userLoginRepo ports.UserLoginRepository) ports.StatisticsService {
 	return &StatisticsService{
 		userRepo:      userRepo,
+		familyRepo:    familyRepo,
 		briefItemRepo: briefItemRepo,
 		userLoginRepo: userLoginRepo,
 	}
@@ -73,6 +76,113 @@ func (s *StatisticsService) GetUserProducts(userID uuid.UUID) (
 
 	response.Items = items
 	return response, nil
+}
+
+// GetPopularProducts получает популярны продукты пользователя
+func (s *StatisticsService) GetPopularProducts(userID uuid.UUID) (
+	responses.GetPopularProductsResponse, error) {
+
+	var (
+		response        responses.GetPopularProductsResponse
+		popularProducts []responses.PopularProduct
+		items           []entities.Item
+	)
+
+	user, err := s.userRepo.FindWithLists(userID)
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске пользователя: ", err)
+		return response, err
+	}
+
+	if user == nil {
+		logger.Log.Warn("Указанный пользователь не найден")
+		return response, errors.ErrorUserNotFound
+	}
+
+	for _, list := range user.Lists {
+		for _, item := range list.Items {
+			items = append(items, item)
+		}
+	}
+
+	user, err = s.userRepo.FindWithFamilies(userID)
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске пользователя: ", err)
+		return response, err
+	}
+
+	for _, membership := range user.Memberships {
+
+		family, err := s.familyRepo.FindWithLists(membership.FamilyID)
+		if err != nil {
+			logger.Log.Error("Ошибка при поиске семьи: ", err)
+			return response, err
+		}
+
+		if family == nil {
+			logger.Log.Warn("Указанная семья не найдена")
+			return response, errors.ErrorFamilyNotFound
+		}
+
+		for _, list := range family.Lists {
+			for _, item := range list.Items {
+				items = append(items, item)
+			}
+		}
+	}
+
+	itemsByNames := make(map[string][]entities.Item)
+
+	for _, item := range items {
+
+		if item.TimesBought > 0 {
+			itemsByNames[item.Name] = append(itemsByNames[item.Name], item)
+		}
+	}
+
+	for name, items := range itemsByNames {
+
+		var quantity int
+		var howOftenEndsSum float64
+		var lastTimeBought time.Time
+
+		for _, item := range items {
+
+			quantity = quantity + item.TimesBought
+
+			createdDaysAgo := int(time.Since(item.CreatedAt) / (24 * time.Hour))
+			howOftenEnds := float64(createdDaysAgo) / float64(item.TimesBought)
+
+			howOftenEndsSum = howOftenEndsSum + howOftenEnds
+
+			if item.CheckedAt != nil &&
+				item.CheckedAt.After(lastTimeBought) {
+				lastTimeBought = *item.CheckedAt
+			}
+		}
+
+		howOftenEnds := int(howOftenEndsSum / float64(len(items)))
+
+		if howOftenEnds == 0 {
+			howOftenEnds = 1
+		}
+
+		boughtHoursAgo := float64(time.Since(lastTimeBought) / time.Hour)
+		currentDay := (boughtHoursAgo / float64(howOftenEnds)) / 24
+
+		popularProduct := responses.PopularProduct{
+			Name:         name,
+			Quantity:     quantity,
+			HowOftenEnds: howOftenEnds,
+			CurrentDay:   currentDay,
+		}
+
+		popularProducts = append(popularProducts, popularProduct)
+	}
+
+	response.PopularProducts = popularProducts
+
+	return response, err
 }
 
 // GetBrief получает все быстро кончающиеся товары пользователя

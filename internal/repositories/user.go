@@ -129,6 +129,18 @@ func (r *UserRepo) FindByEmail(email string) (*entities.User, error) {
 	return &user, nil
 }
 
+// FindAllUsers находит всех пользователей приложения
+func (r *UserRepo) FindAllUsers() ([]entities.User, error) {
+	var users []entities.User
+
+	err := r.db.Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 // CreateUser создает новый объект пользователя в БД
 func (r *UserRepo) CreateUser(user *entities.User) error {
 	return r.db.Create(user).Error

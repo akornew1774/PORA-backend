@@ -17,16 +17,19 @@ import (
 // PushService - объект, содержащий методы для
 // отправки Push-уведомлений пользователям
 type PushService struct {
+	userRepo       ports.UserRepository
 	deviceRepo     ports.DeviceRepository
 	firebaseClient ports.FirebaseClient
 	cfg            config.PushConfig
 }
 
 // NewPushService создает и возвращает новый объект PushService
-func NewPushService(deviceRepo ports.DeviceRepository,
+func NewPushService(userRepo ports.UserRepository,
+	deviceRepo ports.DeviceRepository,
 	firebaseClient ports.FirebaseClient,
 	cfg config.PushConfig) ports.PushService {
 	return &PushService{
+		userRepo:       userRepo,
 		deviceRepo:     deviceRepo,
 		firebaseClient: firebaseClient,
 		cfg:            cfg,
@@ -160,4 +163,36 @@ func (s *PushService) SendItemReminder(ctx context.Context,
 	}
 
 	return s.SendToUser(ctx, itemReminder.UserID, notification)
+}
+
+// NotifyEveryone отправляет Push-уведомление всем пользователям
+func (s *PushService) NotifyEveryone(
+	ctx context.Context, title string, body string) error {
+
+	data := make(map[string]string)
+
+	data["type"] = s.cfg.NotificationType
+	data["screen"] = s.cfg.NotificationScreen
+
+	notification := notifications.Notification{
+		Title: title,
+		Body:  body,
+		Data:  data,
+	}
+
+	users, err := s.userRepo.FindAllUsers()
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске пользователей: ", err)
+		return err
+	}
+
+	for _, user := range users {
+
+		err := s.SendToUser(ctx, user.ID, notification)
+		if err != nil {
+			logger.Log.Warn("Ошибка при уведомлении пользователя: ", err)
+		}
+	}
+
+	return nil
 }

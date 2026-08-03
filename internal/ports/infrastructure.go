@@ -4,6 +4,7 @@ package ports
 import (
 	"context"
 	"io"
+	models "pora/internal/dto/ai"
 
 	"firebase.google.com/go/v4/messaging"
 )
@@ -23,4 +24,12 @@ type FirebaseClient interface {
 	// Send отправляет Push-уведомление пользователю через Firebase
 	Send(ctx context.Context,
 		message *messaging.Message) (string, error)
+}
+
+// AIClient содержит порты для обращения к ИИ
+type AIClient interface {
+	// Generate отправляет запрос на генерацию
+	// ответа на предоставленный запрос к ИИ
+	Generate(ctx context.Context, request models.AIRequest) (
+		*models.AIResponse, error)
 }

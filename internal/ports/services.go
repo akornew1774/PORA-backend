@@ -115,6 +115,10 @@ type ListService interface {
 	AddItem(userID uuid.UUID, listID uuid.UUID,
 		req requests.ChangeItemRequest) (responses.IDResponse, error)
 
+	// AddItems добавляет несколько новых товаров в список покупок
+	AddItems(userID uuid.UUID, listID uuid.UUID,
+		req requests.AddItemsRequest) error
+
 	// DeleteList удаляет один конкретный список продуктов
 	DeleteList(listID uuid.UUID) error
 
@@ -149,8 +153,8 @@ type ItemService interface {
 	// ChangeItem изменяет поля определенного товара
 	ChangeItem(itemID uuid.UUID, req requests.ChangeItemRequest) error
 
-	// DeleteItem удаляет один товар из списка продуктов
-	DeleteItem(itemID uuid.UUID) error
+	// DeleteItems удаляет товары из списка продуктов
+	DeleteItems(itemIDs []uuid.UUID) error
 
 	// MarkAsBought ставит значение true в поле Checked у товара
 	MarkAsBought(itemID uuid.UUID, checked bool) error
@@ -186,6 +190,10 @@ type PushService interface {
 	// Push-уведомление с напоминанием о конкретном товаре
 	SendItemReminder(ctx context.Context,
 		itemReminder notifications.ItemReminder) error
+
+	// NotifyEveryone отправляет Push-уведомление всем пользователям
+	NotifyEveryone(ctx context.Context,
+		title string, body string) error
 }
 
 // StatisticsService содержит порты для методов
@@ -194,6 +202,10 @@ type StatisticsService interface {
 	// GetUserProducts получает все созданные пользователем товары
 	GetUserProducts(userID uuid.UUID) (
 		responses.GetUserProductsResponse, error)
+
+	// GetPopularProducts получает популярны продукты пользователя
+	GetPopularProducts(userID uuid.UUID) (
+		responses.GetPopularProductsResponse, error)
 
 	// GetBrief получает все быстро кончающиеся товары пользователя
 	GetBrief(userID uuid.UUID) (

@@ -28,6 +28,9 @@ type UserRepository interface {
 	// FindByEmail находит пользователя по электронной почте
 	FindByEmail(email string) (*entities.User, error)
 
+	// FindAllUsers находит всех пользователей приложения
+	FindAllUsers() ([]entities.User, error)
+
 	// CreateUser создает новый объект пользователя в БД
 	CreateUser(user *entities.User) error
 

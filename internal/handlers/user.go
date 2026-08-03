@@ -61,6 +61,7 @@ func (h *UserHandler) UpdateUserInfo(c *gin.Context) {
 	c.JSON(http.StatusOK, responses.GenericResponse{})
 }
 
+// UpdateDevice обновляет информацию об устройстве пользователя
 func (h *UserHandler) UpdateDevice(c *gin.Context) {
 
 	var req requests.UpdateDeviceRequest

@@ -11,6 +11,20 @@ type GetUserProductsResponse struct {
 	Items []ItemInfo `json:"items"`
 }
 
+// GetPopularProductsResponse - структура для запроса
+// на получение популярных продуктов пользователя
+type GetPopularProductsResponse struct {
+	PopularProducts []PopularProduct `json:"items"`
+}
+
+// PopularProduct - модель популярного продукта
+type PopularProduct struct {
+	Name         string  `json:"name"`
+	Quantity     int     `json:"quantity"`
+	HowOftenEnds int     `json:"how-often-ends"`
+	CurrentDay   float64 `json:"current-day"`
+}
+
 // GetBriefResponse - структура для ответ на запрос на
 // получение всех часто кончающихся товаров пользователя
 type GetBriefResponse struct {

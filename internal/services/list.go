@@ -38,7 +38,7 @@ func NewListService(userRepo ports.UserRepository,
 	familyRepo ports.FamilyRepository,
 	listRepo ports.ListRepository,
 	itemRepo ports.ItemRepository,
-	hub ports.Hub,
+	hub *websocket.Hub,
 	itemConfig config.ItemConfig) ports.ListService {
 	return &ListService{
 		userRepo:   userRepo,
@@ -147,61 +147,6 @@ func (s *ListService) AddItem(userID uuid.UUID, listID uuid.UUID,
 
 	var response responses.IDResponse
 
-	itemID := uuid.New()
-
-	item := &entities.Item{
-		ID:     itemID,
-		ListID: listID,
-
-		Name:    req.Name,
-		Section: req.Section,
-
-		Quantity: req.Quantity,
-		Unit:     req.Unit,
-
-		Priority: req.Priority,
-		Urgent:   req.Urgent,
-
-		Checked:         req.Checked,
-		RemindEveryDays: req.RemindEveryDays,
-
-		AddedByID: userID,
-	}
-
-	if item.Checked == true {
-		checkedAt := time.Now().UTC()
-		item.CheckedAt = &checkedAt
-	}
-
-	if item.RemindEveryDays != nil && *item.RemindEveryDays <= 0 {
-		logger.Log.Warn("Некорректный формат RemindEveryDays")
-		return response, errors.ErrorInvalidInput
-	}
-
-	if item.RemindEveryDays != nil {
-
-		t, err := time.Parse("15:04", s.itemConfig.DefaultReminderTime)
-		if err != nil {
-			logger.Log.Error("Ошибка при парсинге времени: ", err)
-			return response, err
-		}
-
-		nextDate := time.Now().UTC().AddDate(0, 0, *item.RemindEveryDays)
-
-		nextReminder := time.Date(
-			nextDate.Year(),
-			nextDate.Month(),
-			nextDate.Day(),
-			t.Hour(),
-			t.Minute(),
-			0,
-			0,
-			nextDate.Location(),
-		)
-
-		item.NextReminderAt = &nextReminder
-	}
-
 	list, err := s.listRepo.FindByID(listID)
 	if err != nil {
 		logger.Log.Error("Ошибка при поиске списка по ID: ", err)
@@ -213,9 +158,8 @@ func (s *ListService) AddItem(userID uuid.UUID, listID uuid.UUID,
 		return response, errors.ErrorListNotFound
 	}
 
-	err = s.itemRepo.CreateItem(item)
+	itemID, err := s.createNewItem(userID, listID, req)
 	if err != nil {
-		logger.Log.Error("Ошибка при создании товара в БД: ", err)
 		return response, err
 	}
 
@@ -249,6 +193,128 @@ func (s *ListService) AddItem(userID uuid.UUID, listID uuid.UUID,
 	}
 
 	return response, nil
+}
+
+// AddItems добавляет несколько новых товаров в список покупок
+func (s *ListService) AddItems(userID uuid.UUID,
+	listID uuid.UUID, req requests.AddItemsRequest) error {
+
+	list, err := s.listRepo.FindByID(listID)
+	if err != nil {
+		logger.Log.Error("Ошибка при поиске списка по ID: ", err)
+		return err
+	}
+
+	if list == nil {
+		logger.Log.Warn("Указанный список не найден")
+		return errors.ErrorListNotFound
+	}
+
+	for _, changeItemRequest := range req.Items {
+
+		_, err := s.createNewItem(userID, listID, changeItemRequest)
+		if err != nil {
+			return err
+		}
+	}
+
+	list.UpdatedAt = time.Now().UTC()
+
+	err = s.listRepo.UpdateList(list)
+	if err != nil {
+		logger.Log.Error("Ошибка при обновлении списка: ", err)
+		return err
+	}
+
+	if list.FamilyID != nil && *list.FamilyID != uuid.Nil {
+
+		family, err := s.familyRepo.FindWithMembers(*list.FamilyID)
+		if err != nil {
+			logger.Log.Error("Ошибка при поиске семьи: ", err)
+			return nil
+		}
+
+		if family == nil {
+			logger.Log.Warn("Указанная семья не найдена")
+			return nil
+		}
+
+		err = s.SendChangesToFamily(family, &listID, nil)
+		if err != nil {
+			logger.Log.Warn("Ошибка при отправке изменений членам семьи: ", err)
+		}
+	}
+
+	return nil
+}
+
+// createNewItem создает новую сущность товара со всеми полями и сохраняет ее в БД
+func (s *ListService) createNewItem(userID uuid.UUID, listID uuid.UUID,
+	req requests.ChangeItemRequest) (uuid.UUID, error) {
+
+	itemID := uuid.New()
+
+	item := &entities.Item{
+		ID:     itemID,
+		ListID: listID,
+
+		Name:    req.Name,
+		Section: req.Section,
+
+		Quantity: req.Quantity,
+		Unit:     req.Unit,
+
+		Priority: req.Priority,
+		Urgent:   req.Urgent,
+
+		Checked:         req.Checked,
+		RemindEveryDays: req.RemindEveryDays,
+
+		AddedByID: userID,
+	}
+
+	if item.Checked {
+		checkedAt := time.Now().UTC()
+		item.CheckedAt = &checkedAt
+		item.TimesBought++
+	}
+
+	if item.RemindEveryDays != nil && *item.RemindEveryDays <= 0 {
+		logger.Log.Warn("Некорректный формат RemindEveryDays")
+		return itemID, errors.ErrorInvalidInput
+	}
+
+	if item.RemindEveryDays != nil {
+
+		t, err := time.Parse("15:04", s.itemConfig.DefaultReminderTime)
+		if err != nil {
+			logger.Log.Error("Ошибка при парсинге времени: ", err)
+			return itemID, err
+		}
+
+		nextDate := time.Now().UTC().AddDate(0, 0, *item.RemindEveryDays)
+
+		nextReminder := time.Date(
+			nextDate.Year(),
+			nextDate.Month(),
+			nextDate.Day(),
+			t.Hour(),
+			t.Minute(),
+			0,
+			0,
+			nextDate.Location(),
+		)
+
+		item.NextReminderAt = &nextReminder
+	}
+
+	err := s.itemRepo.CreateItem(item)
+	if err != nil {
+		logger.Log.Error("Ошибка при создании товара в БД: ", err)
+		return itemID, err
+	}
+
+	return itemID, nil
 }
 
 // DeleteList удаляет один конкретный список продуктов

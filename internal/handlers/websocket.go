@@ -13,12 +13,12 @@ import (
 // WSHandler - объект, содержащий методы для создания
 // Websocket-соединения между сервером и мобильным устройством
 type WSHandler struct {
-	hub          ports.Hub
+	hub          *websocket.Hub
 	tokenService ports.TokenService
 }
 
 // NewWSHandler создает и возвращает новый объект WSHandler
-func NewWSHandler(hub ports.Hub,
+func NewWSHandler(hub *websocket.Hub,
 	tokenService ports.TokenService) *WSHandler {
 	return &WSHandler{
 		hub:          hub,
@@ -49,7 +49,7 @@ func (h *WSHandler) Connect(c *gin.Context) {
 		return
 	}
 
-	client := websocket.NewClient(conn)
+	client := websocket.NewClient(h.hub, conn)
 
 	h.hub.Register(userID, client)
 

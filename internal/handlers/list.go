@@ -128,6 +128,48 @@ func (h *ListHandler) AddItem(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// AddItems обрабатывает запрос на добавление
+// нескольких продуктов в указанный список
+func (h *ListHandler) AddItems(c *gin.Context) {
+
+	var req requests.AddItemsRequest
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		logger.Log.Warn("Ошибка при десериализации запроса: ", err)
+		c.Error(errors.ErrorInvalidInput)
+		return
+	}
+
+	rawListID := c.Param("list_id")
+
+	listID, err := uuid.Parse(rawListID)
+	if err != nil {
+		logger.Log.Warn("Некорректный uuid в запросе: ", err)
+		c.Error(errors.ErrorInvalidInput)
+		return
+	}
+
+	accessToken := c.GetHeader("Authorization")
+
+	userID, err := h.tokenService.DecodeAccessToken(accessToken)
+	if err != nil {
+		logger.Log.Warn("Возникла ошибка при декодировании Access-токена")
+		c.Error(err)
+		return
+	}
+
+	err = h.listService.AddItems(userID, listID, req)
+
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	logger.Log.Info("Добавление товаров в список прошло успешно")
+	c.JSON(http.StatusOK, responses.GenericResponse{})
+}
+
 // DeleteList обрабатывает запрос на удаление списка продуктов
 func (h *ListHandler) DeleteList(c *gin.Context) {
 
