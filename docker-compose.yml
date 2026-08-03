@@ -36,6 +36,9 @@ services:
 
     env_file:
       - .env
+    
+    volumes:
+      - ./.env:/app/.env:ro
 
     environment:
       DB_HOST: postgres
