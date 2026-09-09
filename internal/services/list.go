@@ -2,6 +2,7 @@
 package services
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"pora/internal/config"
@@ -410,9 +411,16 @@ func (s *ListService) GetAllSections(list *entities.List) (
 	result := make([]responses.SectionInfo, 0, len(names))
 
 	for _, name := range names {
+
+		sectionItems, err := s.sortListItems(sections[name], collator)
+		if err != nil {
+			logger.Log.Error("Ошибка при сортировке модели товара: ", err)
+			return result, err
+		}
+
 		result = append(result, responses.SectionInfo{
 			Name:  name,
-			Items: sections[name],
+			Items: sectionItems,
 		})
 	}
 
@@ -474,13 +482,43 @@ func (s *ListService) GetHighestPrioritySections(
 	result := make([]responses.SectionInfo, 0, len(names))
 
 	for _, name := range names {
+
+		sectionItems, err := s.sortListItems(sections[name], collator)
+		if err != nil {
+			logger.Log.Error("Ошибка при сортировке модели товара: ", err)
+			return result, err
+		}
+
 		result = append(result, responses.SectionInfo{
 			Name:  name,
-			Items: sections[name],
+			Items: sectionItems,
 		})
 	}
 
 	return result, nil
+}
+
+// sortListItems сортирует товары списка
+// (сначала по Proirity, потом по алфавиту)
+func (s *ListService) sortListItems(items []responses.ItemInfo,
+	collator *collate.Collator) ([]responses.ItemInfo, error) {
+
+	sort.SliceStable(items, func(i, j int) bool {
+		return bytes.Compare(items[i].ID[:], items[j].ID[:]) < 0
+	})
+
+	sort.SliceStable(items, func(i, j int) bool {
+		return collator.CompareString(
+			items[i].Name,
+			items[j].Name,
+		) < 0
+	})
+
+	sort.SliceStable(items, func(i, j int) bool {
+		return items[i].Priority > items[j].Priority
+	})
+
+	return items, nil
 }
 
 // СonvertToItemInfo переводит сущности Item из типа entities.Item в формат
